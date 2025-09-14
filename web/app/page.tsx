@@ -1,8 +1,0 @@
-export default function AppHome() {
-  return (
-    <main className="max-w-3xl mx-auto p-8">
-      <h1 className="text-2xl font-semibold">Your Watches</h1>
-      <p className="text-gray-600 mt-2">Add a watch to get alerts for new open-box inventory.</p>
-    </main>
-  );
-}
