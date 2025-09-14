@@ -2,12 +2,21 @@
 import 'server-only';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Load CA from SUPABASE_CA_B64 (preferred in Vercel) or fall back to a repo file.
+const caFilePath = path.resolve(process.cwd(), 'supabase-ca.crt');
+let ca: Buffer | undefined;
+if (process.env.SUPABASE_CA_B64) {
+  ca = Buffer.from(process.env.SUPABASE_CA_B64, 'base64');
+} else if (fs.existsSync(caFilePath)) {
+  ca = fs.readFileSync(caFilePath);
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // If you used the CA file locally you can keep it there,
-  // but on Vercel this is usually enough because your URL has sslmode=require.
-  // ssl: { ca: process.env.SUPABASE_CA ?? undefined },
+  ssl: ca ? { ca, rejectUnauthorized: true } : undefined,
 });
 
 export const db = drizzle(pool);
