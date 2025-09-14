@@ -14,7 +14,6 @@ export default defineConfig({
   schema: './lib/drizzle/schema.ts',
   out: './drizzle',
   dbCredentials: {
-    url: process.env.DATABASE_URL!, // direct 5432 URI with ?sslmode=require
-    ssl: { ca: fs.readFileSync(caPath), rejectUnauthorized: true },
+    url: process.env.DATABASE_URL!,
   },
 });
