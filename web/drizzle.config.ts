@@ -15,5 +15,6 @@ export default defineConfig({
   out: './drizzle',
   dbCredentials: {
     url: process.env.DATABASE_URL!,
+    ssl: { ca: fs.readFileSync(path.join(process.cwd(), 'supabase-ca.crt')), rejectUnauthorized: true },
   },
 });
