@@ -7,5 +7,7 @@ export default defineConfig({
   out: './drizzle',
   dbCredentials: {
     url: process.env.DATABASE_URL!,
+    // drizzle-kit passes this to node-postgres
+    ssl: 'require',
   },
 });
