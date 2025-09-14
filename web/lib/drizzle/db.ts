@@ -23,6 +23,20 @@ try {
   // ignore logging errors
 }
 
+// If we have the CA as an env var but NODE_EXTRA_CA_CERTS isn't set, write
+// the CA to a runtime path and set NODE_EXTRA_CA_CERTS so Node trusts it.
+if (caString && !process.env.NODE_EXTRA_CA_CERTS) {
+  try {
+    // Prefer Vercel runtime path if available
+    const runtimePath = process.env.VERCEL ? '/vercel/path0/supabase-ca.crt' : '/tmp/supabase-ca.crt';
+    fs.writeFileSync(runtimePath, caString, { encoding: 'utf8' });
+    process.env.NODE_EXTRA_CA_CERTS = runtimePath;
+    console.log('db: wrote CA to', runtimePath);
+  } catch (e) {
+    console.error('db: failed to write CA file', e);
+  }
+}
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: caString ? { ca: [caString], rejectUnauthorized: true } : undefined,

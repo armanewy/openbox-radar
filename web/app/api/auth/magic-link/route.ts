@@ -5,7 +5,14 @@ import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+let _resend: Resend | null = null;
+function getResend() {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY not set');
+  _resend = new Resend(key);
+  return _resend;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +28,7 @@ export async function POST(req: NextRequest) {
 
     const link = `${process.env.APP_BASE_URL}/api/auth/callback?token=${token}`;
 
+    const resend = getResend();
     await resend.emails.send({
       from: "Open-Box Radar <login@openboxradar.com>",
       to: email,
