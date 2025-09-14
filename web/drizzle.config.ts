@@ -13,7 +13,8 @@ if (process.env.SUPABASE_CA_B64) {
   caBuffer = fs.readFileSync(caFilePath);
 }
 
-const sslOption = caBuffer ? { ca: caBuffer, rejectUnauthorized: true } : undefined;
+const caString = caBuffer ? caBuffer.toString('utf8') : undefined;
+const sslOption = caString ? { ca: [caString], rejectUnauthorized: true } : undefined;
 
 export default defineConfig({
   dialect: 'postgresql',
