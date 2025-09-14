@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/drizzle/db";
-import { alerts, inventory, users, watches } from "@/lib/drizzle/schema";
+import { inventory, users, watches } from "@/lib/drizzle/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { fetchDevItems } from "@/lib/retailers/dev";
 import { sendAlertEmail } from "@/lib/alerts/email";
@@ -27,13 +27,18 @@ export async function GET(req: NextRequest) {
       checked++;
 
       // Find last snapshot for same key
-      const last = await db.select().from(inventory)
-        .where(and(
-          eq(inventory.retailer, item.retailer as any),
-          eq(inventory.storeId, item.storeId),
-          eq(inventory.sku, item.sku || null)
-        ))
-        .orderBy(desc(inventory.seenAt)).limit(1);
+      const last = await db
+        .select()
+        .from(inventory)
+        .where(
+          and(
+            eq(inventory.retailer, item.retailer as any),
+            eq(inventory.storeId, item.storeId),
+            item.sku ? eq(inventory.sku, item.sku) : undefined
+          )
+        )
+        .orderBy(desc(inventory.seenAt))
+        .limit(1);
 
       let reason: 'new' | 'price_drop' | null = null;
       if (!last.length) {
@@ -42,24 +47,36 @@ export async function GET(req: NextRequest) {
         const old = last[0].priceCents;
         const drop = old - item.priceCents;
         const pct = old ? (drop / old) * 100 : 0;
-        if (drop >= DROP_MIN_CENTS || pct >= DROP_MIN_PCT) reason = 'price_drop';
+        if (drop >= DROP_MIN_CENTS || pct >= DROP_MIN_PCT) {
+          reason = 'price_drop';
+        }
       }
-      if (!reason) continue;
+      
+      if (!reason) {
+        continue;
+      }
 
       // Record snapshot
-      const inserted = await db.insert(inventory).values({
-        retailer: item.retailer as any,
-        storeId: item.storeId,
-        sku: item.sku || null,
-        title: item.title,
-        conditionLabel: item.conditionLabel,
-        conditionRank: 'excellent',       // DEV mapping
-        priceCents: item.priceCents,
-        url: item.url,
-        seenAt: new Date(item.seenAt),
-      }).returning({ id: inventory.id });
+      const inserted = await db
+        .insert(inventory)
+        .values({
+          retailer: item.retailer as any,
+          storeId: item.storeId,
+          sku: item.sku || null,
+          title: item.title,
+          conditionLabel: item.conditionLabel,
+          conditionRank: 'excellent', // DEV mapping
+          priceCents: item.priceCents,
+          url: item.url,
+          seenAt: new Date(item.seenAt),
+        })
+        .returning({ id: inventory.id });
 
       // Email the user
+      if (!w.userId) {
+        continue;
+      }
+
       const u = await db.select().from(users).where(eq(users.id, w.userId));
       if (u[0]?.email) {
         await sendAlertEmail(u[0].email, {
@@ -72,12 +89,7 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      await db.insert(alerts).values({
-        watchId: w.id,
-        inventoryId: inserted[0].id,
-        channel: 'email',
-        reason,
-      });
+      // TODO: alerts table not implemented in schema
     }
   }
 
