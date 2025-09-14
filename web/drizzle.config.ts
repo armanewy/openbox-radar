@@ -15,8 +15,6 @@ export default defineConfig({
   out: './drizzle',
   dbCredentials: {
     url: process.env.DATABASE_URL!, // direct 5432 URI with ?sslmode=require
-    ssl: haveCA
-      ? { ca: fs.readFileSync(caPath, 'utf8') }
-      : (isCI ? true : { rejectUnauthorized: false }), // dev fallback; CI uses normal TLS
+    ssl: { ca: fs.readFileSync(caPath), rejectUnauthorized: true },
   },
 });
