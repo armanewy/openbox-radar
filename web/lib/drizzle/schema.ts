@@ -57,3 +57,13 @@ export const inventory = pgTable("inventory", {
   url: text("url").notNull(),
   seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const magicTokens = pgTable("magic_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
