@@ -13,7 +13,7 @@ importers:
         version: 0.8.0
       drizzle-orm:
         specifier: 0.33.0
-        version: 0.33.0(@neondatabase/serverless@0.7.2)(@types/pg@8.6.6)(@types/react@18.3.3)(@vercel/postgres@0.8.0)(pg@8.11.5)(react@18.3.1)
+        version: 0.33.0(@neondatabase/serverless@0.7.2)(@types/pg@8.15.5)(@types/react@18.3.3)(@vercel/postgres@0.8.0)(pg@8.11.5)(react@18.3.1)
       next:
         specifier: 14.2.4
         version: 14.2.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -33,6 +33,9 @@ importers:
       '@types/node':
         specifier: 20.14.9
         version: 20.14.9
+      '@types/pg':
+        specifier: ^8.15.5
+        version: 8.15.5
       '@types/react':
         specifier: 18.3.3
         version: 18.3.3
@@ -397,6 +400,9 @@ packages:
 
   '@types/node@20.14.9':
     resolution: {integrity: sha512-06OCtnTXtWOZBJlRApleWndH4JsRVs1pDCc8dLSQp+7PpUpX3ePdHyeNSFTeSe7FtKyQkrlPvHwJOW3SLd8Oyg==}
+
+  '@types/pg@8.15.5':
+    resolution: {integrity: sha512-LF7lF6zWEKxuT3/OR8wAZGzkg4ENGXFNyiV/JeOt9z5B+0ZVwbql9McqX5c/WStFq1GaGso7H1AzP/qSzmlCKQ==}
 
   '@types/pg@8.6.6':
     resolution: {integrity: sha512-O2xNmXebtwVekJDD+02udOncjVcMZQuTEQEMpKJ0ZRf5E7/9JJX3izhKUcUifBkyKpljyUM6BTgy2trmviKlpw==}
@@ -926,6 +932,12 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
+  '@types/pg@8.15.5':
+    dependencies:
+      '@types/node': 20.14.9
+      pg-protocol: 1.10.3
+      pg-types: 2.2.0
+
   '@types/pg@8.6.6':
     dependencies:
       '@types/node': 20.14.9
@@ -977,10 +989,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.33.0(@neondatabase/serverless@0.7.2)(@types/pg@8.6.6)(@types/react@18.3.3)(@vercel/postgres@0.8.0)(pg@8.11.5)(react@18.3.1):
+  drizzle-orm@0.33.0(@neondatabase/serverless@0.7.2)(@types/pg@8.15.5)(@types/react@18.3.3)(@vercel/postgres@0.8.0)(pg@8.11.5)(react@18.3.1):
     optionalDependencies:
       '@neondatabase/serverless': 0.7.2
-      '@types/pg': 8.6.6
+      '@types/pg': 8.15.5
       '@types/react': 18.3.3
       '@vercel/postgres': 0.8.0
       pg: 8.11.5
