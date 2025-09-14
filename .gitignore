@@ -12,3 +12,4 @@ pnpm-debug.log*
 yarn-debug.log*
 # OS
 .DS_Store
+.vercel
