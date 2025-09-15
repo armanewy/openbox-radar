@@ -2,16 +2,17 @@ import 'server-only';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
-// TEMP: ship-now TLS — encrypted, but skip any verification paths.
-// We'll replace this with proper CA pinning after auth works end-to-end.
+const caPem = Buffer.from(process.env.SUPABASE_CA_B64!, 'base64').toString('utf8');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Supabase session/shared pooler :6543
+  // IMPORTANT: strip query params so url can't override ssl object
+  connectionString: process.env.DATABASE_URL!.replace(/\?.*$/, ''),
   ssl: {
-    rejectUnauthorized: false,
-    // This bypasses hostname/cert chain checks even if some code path re-enables TLS verify.
-    checkServerIdentity: () => undefined,
+    ca: caPem,                 // trust Supabase CA
+    rejectUnauthorized: true,  // enforce verification
+    servername: 'aws-1-us-east-2.pooler.supabase.com', // SNI/hostname match
     minVersion: 'TLSv1.2',
-  } as any,
+  },
   max: 5,
   idleTimeoutMillis: 10_000,
 });
