@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, timestamp, boolean, customType } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, serial, integer, timestamp, boolean, customType } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
@@ -92,7 +92,7 @@ export type NewWatch = typeof watches.$inferInsert;
  *  seen_at (timestamptz, not null)
  */
 export const inventory = pgTable('inventory', {
-  id: integer('id').notNull(), // add .primaryKey() if the DB actually has a PK on id
+  id: serial('id').primaryKey(),
   retailer: retailerT('retailer').notNull(),
   storeId: text('store_id').notNull(),
   sku: text('sku'),
