@@ -1637,10 +1637,10 @@ var require_canvas = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-IrPy3d/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-Dsguxb/middleware-loader.entry.ts
 init_modules_watch_stub();
 
-// .wrangler/tmp/bundle-IrPy3d/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-Dsguxb/middleware-insertion-facade.js
 init_modules_watch_stub();
 
 // src/index.ts
@@ -11482,15 +11482,89 @@ async function fetchMicroCenterOpenBoxDOM(storeId) {
 }
 __name(fetchMicroCenterOpenBoxDOM, "fetchMicroCenterOpenBoxDOM");
 
+// src/adapters/bestbuy_api.ts
+init_modules_watch_stub();
+var API_ROOT = "https://api.bestbuy.com";
+function toTitleCase(s) {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+__name(toTitleCase, "toTitleCase");
+function pickBestOffer(offers) {
+  if (!offers || offers.length === 0) return void 0;
+  const withPrice = offers.find((o) => typeof o.prices?.current === "number");
+  return withPrice || offers[0];
+}
+__name(pickBestOffer, "pickBestOffer");
+function mapToItem(p) {
+  const best = pickBestOffer(p.offers);
+  const current = best?.prices?.current ?? p.prices?.current;
+  const url = p.links?.web || p.links?.product;
+  const title = p.names?.title;
+  const condition = best?.condition ? toTitleCase(best.condition) : "Unknown";
+  if (!url || !title || !current) return null;
+  return {
+    retailer: "bestbuy",
+    storeId: "bby-online",
+    sku: p.sku,
+    title,
+    conditionLabel: `Open-Box ${condition}`,
+    priceCents: Math.round(current * 100),
+    url,
+    seenAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+__name(mapToItem, "mapToItem");
+async function fetchJson(u) {
+  const res = await fetch(u, { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`BestBuy API ${res.status}`);
+  return res.json();
+}
+__name(fetchJson, "fetchJson");
+async function fetchBestBuyOpenBoxBySkus(apiKey, skus) {
+  if (!apiKey) throw new Error("BESTBUY_API_KEY missing");
+  if (!skus.length) return { storeId: "bby-online", items: [] };
+  const query2 = `openBox(sku in(${skus.join(",")}))`;
+  const u = `${API_ROOT}/beta/products/${encodeURI(query2)}?apiKey=${encodeURIComponent(apiKey)}`;
+  const json = await fetchJson(u);
+  const results = json?.results ?? [];
+  const items = results.map(mapToItem).filter(Boolean);
+  return { storeId: "bby-online", items };
+}
+__name(fetchBestBuyOpenBoxBySkus, "fetchBestBuyOpenBoxBySkus");
+async function fetchBestBuyOpenBoxByCategory(apiKey, categoryId, pageSize = 50) {
+  if (!apiKey) throw new Error("BESTBUY_API_KEY missing");
+  if (!categoryId) return { storeId: "bby-online", items: [] };
+  const query2 = `openBox(categoryId=${categoryId})`;
+  const u = `${API_ROOT}/beta/products/${encodeURI(query2)}?apiKey=${encodeURIComponent(apiKey)}&pageSize=${encodeURIComponent(String(pageSize))}`;
+  const json = await fetchJson(u);
+  const results = json?.results ?? [];
+  const items = results.map(mapToItem).filter(Boolean);
+  return { storeId: "bby-online", items };
+}
+__name(fetchBestBuyOpenBoxByCategory, "fetchBestBuyOpenBoxByCategory");
+
 // src/scheduler.ts
 var Scheduler = {
   async run(env) {
-    const useReal = env.USE_REAL_MICROCENTER === "1";
-    const mcPromise = useReal ? fetchMicroCenterOpenBoxDOM("mc-cambridge") : fetchMicroCenterStore("mc-cambridge");
-    const batches = await Promise.all([
-      fetchBestBuyStore("bby-123"),
-      mcPromise
-    ]);
+    const useRealMC = env.USE_REAL_MICROCENTER === "1";
+    const useRealBBY = env.USE_REAL_BESTBUY === "1";
+    const mcPromise = useRealMC ? fetchMicroCenterOpenBoxDOM("mc-cambridge") : fetchMicroCenterStore("mc-cambridge");
+    let bbyPromise;
+    if (useRealBBY) {
+      const apiKey = env.BESTBUY_API_KEY || "";
+      const skus = String(env.BESTBUY_SKUS || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const category = env.BESTBUY_CATEGORY || "";
+      if (skus.length) {
+        bbyPromise = fetchBestBuyOpenBoxBySkus(apiKey, skus);
+      } else if (category) {
+        bbyPromise = fetchBestBuyOpenBoxByCategory(apiKey, category, Number(env.BESTBUY_PAGE_SIZE || 50));
+      } else {
+        bbyPromise = Promise.resolve({ storeId: "bby-online", items: [] });
+      }
+    } else {
+      bbyPromise = fetchBestBuyStore("bby-123");
+    }
+    const batches = await Promise.all([bbyPromise, mcPromise]);
     const items = batches.flatMap((b) => b.items);
     if (items.length === 0) return { ok: true, ingested: 0 };
     const ingestUrl = env.INGEST_URL || "";
@@ -11569,7 +11643,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-IrPy3d/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-Dsguxb/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -11602,7 +11676,7 @@ function __facade_invoke__(request, env, ctx, dispatch2, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-IrPy3d/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-Dsguxb/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
