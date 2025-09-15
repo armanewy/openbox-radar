@@ -13,16 +13,16 @@ export async function fetchDevItems(watch: {
   retailer: 'bestbuy'|'microcenter';
   sku: string | null;
 }) : Promise<DevItem[]> {
-  if (!watch.sku) return [];
-  // Fake one item so we exercise the whole pipeline
+  // Produce at least one item so we exercise the whole pipeline
   const storeId = watch.retailer === 'bestbuy' ? 'bby-123' : 'mc-cambridge';
   const base = 99900;
   const priceCents = base - Math.floor(Math.random() * 15000); // random drop
+  const title = watch.sku ? `DEV ${watch.sku}` : `DEV Open-Box Example (${watch.retailer})`;
   return [{
     retailer: watch.retailer,
     storeId,
     sku: watch.sku || undefined,
-    title: `DEV ${watch.sku}`,
+    title,
     conditionLabel: 'Open-Box Excellent',
     priceCents,
     url: 'https://example.com',

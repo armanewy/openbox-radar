@@ -11,8 +11,8 @@ const DROP_MIN_PCT = 5;        // 5%
 export async function GET(req: NextRequest) {
   // Protect in prod
   const auth = req.headers.get("authorization") || "";
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  if (process.env.NODE_ENV === "production" && auth !== expected) {
+  const secret = process.env.CRON_SECRET;
+  if (process.env.NODE_ENV === "production" && secret && auth !== `Bearer ${secret}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -52,25 +52,33 @@ export async function GET(req: NextRequest) {
         }
       }
       
-      if (!reason) {
-        continue;
-      }
+      // Always insert a snapshot so the feed has data
+      const rank = normalizeRank(item.conditionLabel);
+      await db.insert(inventory).values({
+        retailer: item.retailer as any,
+        store_id: item.storeId,
+        sku: item.sku ?? null,
+        title: item.title,
+        condition_label: item.conditionLabel,
+        condition_rank: rank as any,
+        price_cents: item.priceCents,
+        url: item.url,
+        seen_at: new Date(item.seenAt),
+      });
 
-      // Email the user
-      if (!w.user_id) {
-        continue;
-      }
-
-      const u = await db.select().from(users).where(eq(users.id, w.user_id));
-      if (u[0]?.email) {
-        await sendAlertEmail(u[0].email, {
-          title: item.title,
-          priceCents: item.priceCents,
-          conditionLabel: item.conditionLabel,
-          url: item.url,
-          store: item.storeId,
-          reason,
-        });
+      // Email only on 'new' or 'price_drop'
+      if (reason && w.user_id) {
+        const u = await db.select().from(users).where(eq(users.id, w.user_id));
+        if (u[0]?.email) {
+          await sendAlertEmail(u[0].email, {
+            title: item.title,
+            priceCents: item.priceCents,
+            conditionLabel: item.conditionLabel,
+            url: item.url,
+            store: item.storeId,
+            reason,
+          });
+        }
       }
 
       // TODO: alerts table not implemented in schema
@@ -78,4 +86,13 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, checked });
+}
+
+function normalizeRank(label: string): 'certified'|'excellent'|'satisfactory'|'fair'|'unknown' {
+  const s = label.toLowerCase();
+  if (s.includes('certified')) return 'certified';
+  if (s.includes('excellent')) return 'excellent';
+  if (s.includes('satisfactory')) return 'satisfactory';
+  if (s.includes('fair')) return 'fair';
+  return 'unknown';
 }
