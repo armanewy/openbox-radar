@@ -27,7 +27,7 @@ async function Watches() {
         <input name="sku" placeholder="SKU (optional)" className="border rounded px-2 py-2" />
         <input name="zipcode" placeholder="ZIP code" required className="border rounded px-2 py-2" />
         <input name="radius_miles" type="number" defaultValue={25} className="border rounded px-2 py-2" />
-        <input name="price_ceiling_cents" type="number" placeholder="Max price (cents)" className="border rounded px-2 py-2 col-span-2" />
+        <input name="price_ceiling_usd" type="number" placeholder="Max price (USD)" className="border rounded px-2 py-2 col-span-2" />
         <button className="px-4 py-2 bg-black text-white rounded col-span-2">Add Watch</button>
       </form>
 
@@ -66,7 +66,7 @@ async function createWatch(formData: FormData) {
     sku: (formData.get("sku") || undefined) as string | undefined,
     zipcode: String(formData.get("zipcode")),
     radius_miles: Number(formData.get("radius_miles") || 25),
-    price_ceiling_cents: formData.get("price_ceiling_cents") ? Number(formData.get("price_ceiling_cents")) : undefined,
+    price_ceiling_cents: formData.get("price_ceiling_usd") ? Math.round(Number(formData.get("price_ceiling_usd")) * 100) : undefined,
   };
   // relative path keeps it working in dev/prod
   await fetch("/api/watches", {

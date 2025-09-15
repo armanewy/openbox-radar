@@ -5,6 +5,7 @@ export default function Page() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState("");
+  const [nextParam, setNextParam] = useState<string | null>(null);
 
   async function sendLink(e: React.FormEvent) {
     e.preventDefault();
@@ -12,10 +13,17 @@ export default function Page() {
     const r = await fetch("/api/auth/magic-link", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, next: nextParam ?? undefined }),
     });
     if (r.ok) setSent(true);
     else setErr("Could not send link. Try again.");
+  }
+
+  // capture ?next= for magic link flow
+  if (typeof window !== 'undefined' && nextParam === null) {
+    const u = new URL(window.location.href);
+    const n = u.searchParams.get('next');
+    if (n) setNextParam(n);
   }
 
   return (

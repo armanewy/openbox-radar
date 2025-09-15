@@ -66,13 +66,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
 
   const q = typeof searchParams.q === "string" ? searchParams.q : "";
   const retailer = typeof searchParams.retailer === "string" ? searchParams.retailer : "";
+  const sku = typeof searchParams.sku === "string" ? searchParams.sku : "";
   const min_condition = typeof searchParams.min_condition === "string" ? searchParams.min_condition : "";
-  const price_min = typeof searchParams.price_min === "string" ? searchParams.price_min : "";
-  const price_max = typeof searchParams.price_max === "string" ? searchParams.price_max : "";
+  const price_min = typeof searchParams.price_min === "string" ? searchParams.price_min : ""; // USD
+  const price_max = typeof searchParams.price_max === "string" ? searchParams.price_max : ""; // USD
   const zip = typeof searchParams.zip === "string" ? searchParams.zip : "";
   const radius_miles = typeof searchParams.radius_miles === "string" ? searchParams.radius_miles : "";
 
-  const baseParams = { q, retailer, min_condition, price_min, price_max, zip, radius_miles };
+  const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles };
 
   return (
     <main className="max-w-6xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -91,6 +92,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
             </select>
           </div>
           <div>
+            <label className="block text-sm text-gray-600">SKU</label>
+            <input name="sku" defaultValue={sku} placeholder="Exact or partial" className="mt-1 w-full border rounded px-3 py-2" />
+          </div>
+          <div>
             <label className="block text-sm text-gray-600">Min condition</label>
             <select name="min_condition" defaultValue={min_condition} className="mt-1 w-full border rounded px-3 py-2">
               <option value="">Any</option>
@@ -103,11 +108,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-sm text-gray-600">Min price</label>
+              <label className="block text-sm text-gray-600">Min price (USD)</label>
               <input name="price_min" type="number" defaultValue={price_min} className="mt-1 w-full border rounded px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm text-gray-600">Max price</label>
+              <label className="block text-sm text-gray-600">Max price (USD)</label>
               <input name="price_max" type="number" defaultValue={price_max} className="mt-1 w-full border rounded px-3 py-2" />
             </div>
           </div>
@@ -150,8 +155,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
               <div className="md:text-right">
                 <div className="text-lg font-semibold">{dollars(it.price_cents)}</div>
                 <div className="mt-2 flex gap-2 md:justify-end">
-                  <a href={it.url} target="_blank" rel="noopener" className="px-3 py-2 border rounded">View at Retailer</a>
-                  <Link href={`/app?next=${encodeURIComponent("/search?"+buildQuery(baseParams))}`} className="px-3 py-2 bg-black text-white rounded">Watch this</Link>
+                  <a href={it.url} target="_blank" rel="noopener noreferrer nofollow" className="px-3 py-2 border rounded">View at Retailer</a>
+                  <Link href={`/?signin=1&next=${encodeURIComponent("/search?"+buildQuery(baseParams))}`} className="px-3 py-2 bg-black text-white rounded">Watch this</Link>
                 </div>
               </div>
             </li>
@@ -172,4 +177,3 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
     </main>
   );
 }
-

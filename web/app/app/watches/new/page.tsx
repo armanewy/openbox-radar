@@ -55,7 +55,8 @@ export default function NewWatchWizard() {
       product_url: productUrl || undefined,
       keywords: keywords ? keywords.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
       min_condition: minCondition,
-      price_ceiling_cents: priceCeiling ? Number(priceCeiling) : undefined,
+      // interpret USD → cents
+      price_ceiling_cents: priceCeiling ? Math.round(Number(priceCeiling) * 100) : undefined,
     };
     const r = await fetch("/api/watches", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
     if (r.ok) {
@@ -168,4 +169,3 @@ export default function NewWatchWizard() {
     </main>
   );
 }
-

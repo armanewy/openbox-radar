@@ -40,8 +40,13 @@ export async function GET(req: NextRequest) {
   const storeParam = url.searchParams.getAll("store_id").join(",") || url.searchParams.get("store_id");
   const storeIds = parseMulti(storeParam);
   const minCondition = url.searchParams.get("min_condition");
-  const priceMin = url.searchParams.get("price_min");
-  const priceMax = url.searchParams.get("price_max");
+  const priceMinRaw = url.searchParams.get("price_min");
+  const priceMaxRaw = url.searchParams.get("price_max");
+  // Interpret price_min/max as USD and convert to cents if present
+  const toCents = (v: string | null) => (v != null && v !== "" ? Math.round(Number(v) * 100) : null);
+  const priceMin = toCents(priceMinRaw);
+  const priceMax = toCents(priceMaxRaw);
+  const skuFilter = url.searchParams.get("sku");
   const zip = url.searchParams.get("zip");
   const radiusMiles = url.searchParams.get("radius_miles");
   const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") ?? 50)));
@@ -51,8 +56,9 @@ export async function GET(req: NextRequest) {
     retailer ? eq(inventory.retailer, retailer as any) : undefined,
     storeIds && storeIds.length ? inArray(inventory.store_id, storeIds) : undefined,
     q ? or(ilike(inventory.title, `%${q}%`), ilike(inventory.sku, `%${q}%`)) : undefined,
-    priceMin ? gte(inventory.price_cents, Number(priceMin)) : undefined,
-    priceMax ? lte(inventory.price_cents, Number(priceMax)) : undefined,
+    skuFilter ? ilike(inventory.sku, `%${skuFilter}%`) : undefined,
+    priceMin != null ? gte(inventory.price_cents, priceMin) : undefined,
+    priceMax != null ? lte(inventory.price_cents, priceMax) : undefined,
     minCondition ? gte(inventory.condition_rank as any, minCondition as any) : undefined,
     // Cursor pagination: (seen_at, id) tuple less-than the cursor
     cursor
@@ -127,4 +133,3 @@ export async function GET(req: NextRequest) {
     geo: zip || radiusMiles ? { zip, radiusMiles, supported: false } : undefined,
   });
 }
-
