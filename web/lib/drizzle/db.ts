@@ -24,16 +24,46 @@ try {
 }
 
 // If we have the CA as an env var but NODE_EXTRA_CA_CERTS isn't set, write
-// the CA to a runtime path and set NODE_EXTRA_CA_CERTS so Node trusts it.
-if (caString && !process.env.NODE_EXTRA_CA_CERTS) {
-  try {
-    // Prefer Vercel runtime path if available
-    const runtimePath = process.env.VERCEL ? '/vercel/path0/supabase-ca.crt' : '/tmp/supabase-ca.crt';
-    fs.writeFileSync(runtimePath, caString, { encoding: 'utf8' });
-    process.env.NODE_EXTRA_CA_CERTS = runtimePath;
-    console.log('db: wrote CA to', runtimePath);
-  } catch (e) {
-    console.error('db: failed to write CA file', e);
+// If we have the CA as an env var, write it to multiple likely runtime paths
+// and set NODE_EXTRA_CA_CERTS to whichever path is present (or to the env
+// override). This increases the chance that every serverless instance can
+// find the CA regardless of working directory differences.
+if (caString) {
+  const candidatePaths = [
+    process.env.NODE_EXTRA_CA_CERTS || '',
+    '/vercel/path0/web/supabase-ca.crt',
+    '/vercel/path0/supabase-ca.crt',
+    '/tmp/supabase-ca.crt',
+  ].filter(Boolean) as string[];
+
+  const wrote: string[] = [];
+  for (const p of candidatePaths) {
+    try {
+      // Ensure parent dir exists for paths inside project
+      const dir = path.dirname(p);
+      if (!fs.existsSync(dir)) {
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+        } catch (e) {}
+      }
+      fs.writeFileSync(p, caString, { encoding: 'utf8' });
+      wrote.push(p);
+    } catch (e) {
+      // ignore individual write failures
+    }
+  }
+
+  // Prefer an explicit NODE_EXTRA_CA_CERTS if present, otherwise pick the
+  // first path we successfully wrote to.
+  if (!process.env.NODE_EXTRA_CA_CERTS) {
+    if (wrote.length) {
+      process.env.NODE_EXTRA_CA_CERTS = wrote[0];
+      console.log('db: wrote CA to', wrote);
+    } else {
+      console.error('db: failed to write CA to any candidate path');
+    }
+  } else {
+    console.log('db: NODE_EXTRA_CA_CERTS already set to', process.env.NODE_EXTRA_CA_CERTS);
   }
 }
 
@@ -43,3 +73,24 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool);
+
+export function getDbDebug() {
+  return {
+    supabaseCaB64: !!process.env.SUPABASE_CA_B64,
+    caLength: ca ? ca.length : 0,
+    nodeExtra: process.env.NODE_EXTRA_CA_CERTS ?? null,
+    caFilePathResolved: caFilePath,
+    caWrotePaths: (() => {
+      try {
+        return [
+          '/vercel/path0/web/supabase-ca.crt',
+          '/vercel/path0/supabase-ca.crt',
+          '/tmp/supabase-ca.crt',
+          caFilePath,
+        ].map(p => ({ path: p, exists: fs.existsSync(p) }));
+      } catch (e) {
+        return null;
+      }
+    })(),
+  };
+}

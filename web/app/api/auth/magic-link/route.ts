@@ -4,6 +4,7 @@ import { users, magicTokens } from "@/lib/drizzle/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import { Resend } from "resend";
+import { getDbDebug } from "@/lib/drizzle/db";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -40,6 +41,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
+    try {
+      console.error('magic-link db debug:', getDbDebug());
+    } catch (e) {
+      console.error('magic-link debug failed', e);
+    }
     console.error("magic-link error:", err); // view in Vercel logs
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
