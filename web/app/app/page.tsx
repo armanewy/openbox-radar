@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/utils/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { absoluteUrl } from "@/lib/utils/url";
 
 export default async function AppPage() {
@@ -10,7 +11,11 @@ export default async function AppPage() {
 }
 
 async function Watches() {
-  const res = await fetch(absoluteUrl("/api/watches"), { cache: "no-store" });
+  const cookie = headers().get("cookie") ?? "";
+  const res = await fetch(absoluteUrl("/api/watches"), {
+    cache: "no-store",
+    headers: { cookie },
+  });
   const data = (await res.json()) as { watches: any[] };
   const rows = data.watches || [];
 
@@ -70,11 +75,14 @@ async function createWatch(formData: FormData) {
     price_ceiling_cents: formData.get("price_ceiling_usd") ? Math.round(Number(formData.get("price_ceiling_usd")) * 100) : undefined,
   };
   // relative path keeps it working in dev/prod
+  const cookie = headers().get("cookie") ?? "";
   await fetch(absoluteUrl("/api/watches"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
+    // forward session cookie to API
+    headers: { "content-type": "application/json", cookie },
   });
   revalidatePath("/app");
 }
@@ -82,12 +90,14 @@ async function createWatch(formData: FormData) {
 async function deleteWatch(formData: FormData) {
   "use server";
   const id = String(formData.get("id"));
-  await fetch(absoluteUrl(`/api/watches/${id}`), { method: "DELETE", cache: "no-store" });
+  const cookie = headers().get("cookie") ?? "";
+  await fetch(absoluteUrl(`/api/watches/${id}`), { method: "DELETE", cache: "no-store", headers: { cookie } });
   revalidatePath("/app");
 }
 
 async function RecentMatches() {
-  const res = await fetch(absoluteUrl("/api/matches"), { cache: "no-store" });
+  const cookie = headers().get("cookie") ?? "";
+  const res = await fetch(absoluteUrl("/api/matches"), { cache: "no-store", headers: { cookie } });
   if (!res.ok) return null;
   const data = (await res.json()) as {
     matches: Array<{
