@@ -61,6 +61,37 @@ CREATE INDEX IF NOT EXISTS idx_inventory_store   ON inventory (retailer, store_i
 - **Email**: Postmark or Resend key in env.
 - **Worker**: `wrangler deploy` + Cron Triggers (15/60 min) in `wrangler.toml`.
 
+### Cloudflare Worker → Web Ingest (Option B)
+
+The Worker scrapes retailers and POSTs items to the web app for ingestion.
+
+1) Configure web (Vercel):
+   - Set `CRON_SECRET` env var (same value you’ll use in the Worker as `CRON_SHARED_SECRET`).
+   - Deploy web so `POST /api/ingest` is available.
+
+2) Configure Worker:
+   - Edit `worker/wrangler.toml` and set:
+     - `CRON_SHARED_SECRET = "<same-as-CRON_SECRET>"`
+     - `INGEST_URL = "https://<your-web-domain>/api/ingest"`
+     - Adjust `[triggers].crons` as desired (e.g., every 10 minutes).
+   - Install and deploy:
+     ```bash
+     cd worker
+     pnpm install
+     pnpm deploy
+     ```
+
+3) Test manually:
+   - Invoke the Worker’s manual endpoint:
+     ```bash
+     curl -H "x-cron-secret: <CRON_SHARED_SECRET>" https://<your-worker-subdomain>.workers.dev/cron
+     ```
+   - Visit `/search` on your site and look for DEV items.
+
+Notes:
+- `web/app/api/ingest` accepts batches (up to 1000 items) and writes to `inventory` with normalized condition ranks. It requires `Authorization: Bearer <CRON_SECRET>` or `x-cron-secret: <CRON_SECRET>` in production.
+- The current Worker adapters are stubs; replace with real BestBuy/MicroCenter scrapers next.
+
 ---
 
 ### Notes

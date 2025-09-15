@@ -7,4 +7,4 @@ crons = ["*/30 * * * *"]
 
 [vars]
 CRON_SHARED_SECRET = "change_me"
-DATABASE_URL = ""
+INGEST_URL = "https://your-domain.example/api/ingest"
