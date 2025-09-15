@@ -15,7 +15,10 @@ async function Watches() {
 
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-6">
-      <h1 className="text-2xl font-semibold">Your Watches</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Your Watches</h1>
+        <a href="/app/watches/new" className="px-3 py-2 bg-black text-white rounded">Create new</a>
+      </div>
       <form className="grid grid-cols-2 gap-3" action={createWatch}>
         <select name="retailer" className="border rounded px-2 py-2">
           <option value="bestbuy">Best Buy</option>
