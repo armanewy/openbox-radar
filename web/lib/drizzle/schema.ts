@@ -74,3 +74,26 @@ export const inventory = pgTable('inventory', {
 
 export type Inventory = typeof inventory.$inferSelect;
 export type NewInventory = typeof inventory.$inferInsert;
+
+export const stores = pgTable(
+  'stores',
+  {
+    retailer: retailer_t('retailer').notNull(),
+    store_id: text('store_id').notNull(),
+    name: text('name').notNull(),
+    lat: integer('lat'),      // nullable
+    lng: integer('lng'),      // nullable
+    zipcode: text('zipcode'), // nullable
+    city: text('city'),       // nullable
+    state: text('state'),     // nullable
+  }
+  // If your Postgres table uses a composite PK (retailer, store_id),
+  // and you want Drizzle to know about it, uncomment this block:
+  // ,
+  // (t) => ({
+  //   pk: primaryKey({ columns: [t.retailer, t.store_id] }),
+  // })
+);
+
+export type Store = typeof stores.$inferSelect;
+export type NewStore = typeof stores.$inferInsert;
