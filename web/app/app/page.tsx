@@ -50,6 +50,8 @@ async function Watches() {
           </ul>
         )}
       </section>
+
+      <RecentMatches />
     </main>
   );
 }
@@ -78,4 +80,43 @@ async function deleteWatch(formData: FormData) {
   const id = String(formData.get("id"));
   await fetch(`/api/watches/${id}`, { method: "DELETE", cache: "no-store" });
   revalidatePath("/app");
+}
+
+async function RecentMatches() {
+  const res = await fetch("/api/matches", { cache: "no-store" });
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    matches: Array<{
+      watch_id: string;
+      watch: { retailer: string; sku: string | null; keywords: string[] | null };
+      item: {
+        id: number; retailer: string; store_id: string; sku: string | null; title: string;
+        condition_label: string; price_cents: number; url: string; seen_at: string;
+        store_name: string | null; store_city: string | null; store_state: string | null;
+      };
+    }>;
+  };
+  const rows = data.matches || [];
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xl font-semibold mt-6">Recent Matches</h2>
+      <ul className="space-y-3">
+        {rows.map((m) => (
+          <li key={`${m.item.retailer}-${m.item.store_id}-${m.item.id}`} className="border rounded p-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-medium">{m.item.title}</div>
+              <div className="text-sm text-gray-600">{m.item.store_name || m.item.store_id} • {m.item.store_city}{m.item.store_state ? `, ${m.item.store_state}` : ''}</div>
+              <div className="text-xs text-gray-500">Watch: {m.watch.retailer.toUpperCase()} {m.watch.sku ? `• ${m.watch.sku}` : m.watch.keywords ? `• ${m.watch.keywords.join(', ')}` : ''}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="font-semibold">${"" + (m.item.price_cents / 100).toFixed(2)}</div>
+              <a href={m.item.url} target="_blank" rel="noopener" className="px-3 py-2 border rounded">View</a>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
