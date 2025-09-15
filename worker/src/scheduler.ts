@@ -1,11 +1,14 @@
 import { fetchBestBuyStore, fetchMicroCenterStore } from "./adapters/stubs";
+import { fetchMicroCenterOpenBox } from "./adapters/microcenter";
 
 export const Scheduler = {
   async run(env: any) {
     // TODO: query active watches/store list via Supabase REST or KV; for now, static examples
+    const useReal = env.USE_REAL_MICROCENTER === '1';
+    const mcPromise = useReal ? fetchMicroCenterOpenBox('mc-cambridge') : fetchMicroCenterStore('mc-cambridge');
     const batches = await Promise.all([
       fetchBestBuyStore("bby-123"),
-      fetchMicroCenterStore("mc-cambridge"),
+      mcPromise,
     ]);
 
     const items = batches.flatMap((b) => b.items);

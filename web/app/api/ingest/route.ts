@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle/db';
 import { inventory } from '@/lib/drizzle/schema';
+import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
 const Item = z.object({
@@ -41,19 +42,41 @@ export async function POST(req: NextRequest) {
   const items = parsed.data.items;
   if (items.length === 0) return NextResponse.json({ ok: true, inserted: 0 });
 
-  const values = items.map((it) => ({
-    retailer: it.retailer as any,
-    store_id: it.storeId,
-    sku: it.sku ?? null,
-    title: it.title,
-    condition_label: it.conditionLabel,
-    condition_rank: normalizeRank(it.conditionLabel) as any,
-    price_cents: it.priceCents,
-    url: it.url,
-    seen_at: it.seenAt ? new Date(it.seenAt) : new Date(),
-  }));
+  const dedupeMinutes = Number(process.env.INGEST_DEDUPE_MIN || 60);
+  const threshold = new Date(Date.now() - dedupeMinutes * 60_000);
 
-  await db.insert(inventory).values(values);
-  return NextResponse.json({ ok: true, inserted: values.length });
+  let inserted = 0;
+  for (const it of items) {
+    const seenAt = it.seenAt ? new Date(it.seenAt) : new Date();
+    // Skip if identical snapshot exists within dedupe window: same retailer, store, sku or url key, same price
+    const exists = await db
+      .select({ id: inventory.id })
+      .from(inventory)
+      .where(
+        and(
+          eq(inventory.retailer, it.retailer as any),
+          eq(inventory.store_id, it.storeId),
+          it.sku ? eq(inventory.sku, it.sku) : eq(inventory.url, it.url),
+          eq(inventory.price_cents, it.priceCents),
+          gt(inventory.seen_at, threshold)
+        )
+      )
+      .limit(1);
+    if (exists.length) continue;
+
+    await db.insert(inventory).values({
+      retailer: it.retailer as any,
+      store_id: it.storeId,
+      sku: it.sku ?? null,
+      title: it.title,
+      condition_label: it.conditionLabel,
+      condition_rank: normalizeRank(it.conditionLabel) as any,
+      price_cents: it.priceCents,
+      url: it.url,
+      seen_at: seenAt,
+    });
+    inserted++;
+  }
+
+  return NextResponse.json({ ok: true, inserted });
 }
-
