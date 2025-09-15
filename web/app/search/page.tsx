@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { absoluteUrl } from "@/lib/utils/url";
 
 type Item = {
   id: number;
@@ -57,7 +58,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   }
   if (!qp.has("limit")) qp.set("limit", "20");
 
-  const res = await fetch(`${process.env.APP_BASE_URL ?? ""}/api/inventory/search?` + qp.toString(), {
+  const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
     cache: "no-store",
     // Ensure server fetch regardless of deployment
     next: { revalidate: 0 },
