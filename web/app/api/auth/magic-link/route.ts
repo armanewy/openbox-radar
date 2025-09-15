@@ -1,57 +1,81 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/drizzle/db";
-import { users, magicTokens } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
-import crypto from "crypto";
-import { Resend } from "resend";
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { db } from '@/lib/drizzle/db';
+import { users, magicTokens } from '@/lib/drizzle/schema';
+import { and, eq, gt, desc } from 'drizzle-orm';
+import { Resend } from 'resend';
+import { generateToken, normalizeEmail, tokenExpiry, isValidEmail } from '@/lib/auth/tokens';
+
+export const runtime = 'nodejs'; // explicit: serverless functions
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const APP_BASE_URL = process.env.APP_BASE_URL ?? 'http://localhost:3000';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
-    if (!email) return NextResponse.json({ error: "email required" }, { status: 400 });
+    const { email: rawEmail, next } = await req.json().catch(() => ({}));
+    const email = typeof rawEmail === 'string' ? normalizeEmail(rawEmail) : '';
 
-    // upsert user (IDs generated in app)
-    let u = (await db.select().from(users).where(eq(users.email, email)))[0];
-    if (!u) {
-      u = (await db.insert(users).values({ id: crypto.randomUUID(), email }).returning())[0];
+    // Always 200 for anti-enumeration, even if validation fails
+    if (!isValidEmail(email)) return NextResponse.json({ ok: true });
+
+    // Throttle: 60s between sends for same email if previous token is still valid
+    const nowMinus60 = new Date(Date.now() - 60_000);
+    const recent = await db.query.magicTokens.findFirst({
+      where: and(
+        eq(magicTokens.email, email),
+        eq(magicTokens.used, false),
+        gt(magicTokens.createdAt, nowMinus60)
+      ),
+      orderBy: [desc(magicTokens.createdAt)],
+      columns: { id: true },
+    });
+    if (recent) {
+      return NextResponse.json({ ok: true }); // silently accept
     }
 
-    // create token
-    const token = crypto.randomBytes(24).toString("base64url");
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    // Find-or-create user
+    let user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (!user) {
+      const [created] = await db.insert(users).values({ email }).returning();
+      user = created!;
+    }
+
+    // Create token
+    const token = generateToken();
+    const expiresAt = tokenExpiry(15);
     await db.insert(magicTokens).values({
-      id: crypto.randomUUID(),
-      userId: u.id,
+      userId: user.id,
       email,
       token,
       expiresAt,
     });
 
-    const link = `${process.env.APP_BASE_URL}/api/auth/callback?token=${token}`;
+    // Build link (restrict next= to same-origin paths)
+    const url = new URL('/api/auth/verify', APP_BASE_URL);
+    url.searchParams.set('token', token);
+    if (typeof next === 'string' && next.startsWith('/')) url.searchParams.set('next', next);
 
-    if (!resend) {
-      // TEMP: let you proceed even if email isn’t wired
-      console.warn("RESEND_API_KEY missing; returning debug_link");
-      return NextResponse.json({ ok: true, debug_link: link });
-    }
-
-    const result = await resend.emails.send({
-      from: "Open-Box Radar <login@openboxradar.com>",
-      to: email,
-      subject: "Your sign-in link",
-      html: `<p>Click to sign in:</p><p><a href="${link}">${link}</a></p><p>This link expires in 15 minutes.</p>`,
-    } as any);
-
-    if ((result as any)?.error) {
-      console.error("Resend send error:", (result as any).error);
-      return NextResponse.json({ ok: false, debug_link: link }, { status: 200 });
+    // Email or log
+    if (resend) {
+      await resend.emails.send({
+        from: 'Openbox Radar <auth@openboxradar.com>', // must be verified in Resend
+        to: email,
+        subject: 'Your sign-in link',
+        html: `
+          <p>Click to sign in (valid for 15 minutes):</p>
+          <p><a href="${url.toString()}">${url.toString()}</a></p>
+          <p>If you didn’t request this, you can ignore this email.</p>
+        `,
+      });
+    } else {
+      console.warn('[magic-link] RESEND_API_KEY not set; link:', url.toString());
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("magic-link error:", err);
-    return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
+  } catch (err) {
+    console.error('[magic-link] error', err);
+    // still do not leak details
+    return NextResponse.json({ ok: true });
   }
 }
