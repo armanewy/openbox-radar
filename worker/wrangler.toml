@@ -6,5 +6,6 @@ compatibility_date = "2024-11-01"
 crons = ["*/10 * * * *"]
 
 [vars]
-CRON_SHARED_SECRET = "change_me"
-INGEST_URL = "https://your-domain.example/api/ingest"
+CRON_SHARED_SECRET = "JB0uSHbUchIJ8iYpWKPQTk3Lqzcl332o4HWZNNKgKbzoXlS4dvy6bgZd+3bRymU4"
+INGEST_URL = "http://localhost:3000/api/ingest"
+USE_REAL_MICROCENTER = "1"

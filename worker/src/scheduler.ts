@@ -17,16 +17,20 @@ export const Scheduler = {
     const ingestUrl: string = env.INGEST_URL || '';
     if (!ingestUrl) return { ok: false, error: 'INGEST_URL not set', ingested: 0 };
 
-    const r = await fetch(ingestUrl, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'authorization': `Bearer ${env.CRON_SHARED_SECRET}`,
-      },
-      body: JSON.stringify({ items }),
-    });
+    try {
+      const r = await fetch(ingestUrl, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'authorization': `Bearer ${env.CRON_SHARED_SECRET}`,
+        },
+        body: JSON.stringify({ items }),
+      });
 
-    const json = await r.json().catch(() => ({}));
-    return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0 };
+      const json = await r.json().catch(() => ({}));
+      return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0 };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || String(e), step: 'ingest', ingestUrl };
+    }
   }
 }
