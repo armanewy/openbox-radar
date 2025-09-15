@@ -33,18 +33,18 @@ export async function GET(req: NextRequest) {
         .where(
           and(
             eq(inventory.retailer, item.retailer as any),
-            eq(inventory.storeId, item.storeId),
+            eq(inventory.store_id, item.storeId),
             item.sku ? eq(inventory.sku, item.sku) : undefined
           )
         )
-        .orderBy(desc(inventory.seenAt))
+        .orderBy(desc(inventory.seen_at))
         .limit(1);
 
       let reason: 'new' | 'price_drop' | null = null;
       if (!last.length) {
         reason = 'new';
       } else {
-        const old = last[0].priceCents;
+        const old = last[0].price_cents;
         const drop = old - item.priceCents;
         const pct = old ? (drop / old) * 100 : 0;
         if (drop >= DROP_MIN_CENTS || pct >= DROP_MIN_PCT) {
@@ -56,28 +56,12 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // Record snapshot
-      const inserted = await db
-        .insert(inventory)
-        .values({
-          retailer: item.retailer as any,
-          storeId: item.storeId,
-          sku: item.sku || null,
-          title: item.title,
-          conditionLabel: item.conditionLabel,
-          conditionRank: 'excellent', // DEV mapping
-          priceCents: item.priceCents,
-          url: item.url,
-          seenAt: new Date(item.seenAt),
-        })
-        .returning({ id: inventory.id });
-
       // Email the user
-      if (!w.userId) {
+      if (!w.user_id) {
         continue;
       }
 
-      const u = await db.select().from(users).where(eq(users.id, w.userId));
+      const u = await db.select().from(users).where(eq(users.id, w.user_id));
       if (u[0]?.email) {
         await sendAlertEmail(u[0].email, {
           title: item.title,
