@@ -78,10 +78,8 @@ async function createWatch(formData: FormData) {
   const cookie = headers().get("cookie") ?? "";
   await fetch(absoluteUrl("/api/watches"), {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
-    // forward session cookie to API
     headers: { "content-type": "application/json", cookie },
   });
   revalidatePath("/app");
