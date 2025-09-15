@@ -41,6 +41,18 @@ cd web
 pnpm drizzle:push
 ```
 
+6) **Add search indexes (recommended for performance)**
+Run the SQL in `db/sql/indexes.sql` against your database (e.g., via Supabase SQL editor or `psql`).
+
+```sql
+-- db/sql/indexes.sql
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_inventory_title_trgm ON inventory USING gin (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_inventory_sku_trgm   ON inventory USING gin (sku gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_inventory_seen_at ON inventory (seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_inventory_store   ON inventory (retailer, store_id);
+```
+
 ## Deploy outline
 
 - **Domain**: buy at Cloudflare or Namecheap; set Cloudflare for DNS.
