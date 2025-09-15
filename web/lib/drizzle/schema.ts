@@ -22,54 +22,34 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 
-const retailerT = customType<{ data: string; driverData: string }>({
-  dataType() {
-    return 'retailer_t';
-  },
+// user-defined PG types
+const retailer_t = customType<{ data: string; driverData: string }>({
+  dataType: () => 'retailer_t',
 });
 
-const condRankT = customType<{ data: string; driverData: string }>({
-  dataType() {
-    return 'cond_rank_t';
-  },
+const cond_rank_t = customType<{ data: string; driverData: string }>({
+  dataType: () => 'cond_rank_t',
 });
 
-/**
- * watches
- * Columns (per Supabase UI):
- *  id (uuid, PK, not null)
- *  user_id (uuid, nullable)
- *  retailer (retailer_t, not null)
- *  sku (text, nullable)
- *  product_url (text, nullable)
- *  keywords (text[], nullable)
- *  zipcode (text, nullable)
- *  radius_miles (int4, nullable)
- *  stores (text[], nullable)
- *  price_ceiling_cents (int4, nullable)
- *  min_condition (cond_rank_t, not null)
- *  active (bool, not null)
- *  created_at (timestamptz, not null)
- */
 export const watches = pgTable('watches', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id'), // nullable in your screenshot
-  retailer: retailerT('retailer').notNull(),
-  sku: text('sku'), // nullable
-  productUrl: text('product_url'),
-  keywords: text('keywords').array(), // text[]
+  user_id: uuid('user_id'),                                  // nullable
+  retailer: retailer_t('retailer').notNull(),
+  sku: text('sku'),                                          // nullable
+  product_url: text('product_url'),                           // nullable; we will omit in inserts
+  keywords: text('keywords').array(),                         // text[] nullable
   zipcode: text('zipcode'),
-  radiusMiles: integer('radius_miles'),
-  stores: text('stores').array(), // text[]
-  priceCeilingCents: integer('price_ceiling_cents'),
-  minCondition: condRankT('min_condition').notNull(),
-  active: boolean('active').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  radius_miles: integer('radius_miles'),
+  stores: text('stores').array(),                             // text[] nullable
+  price_ceiling_cents: integer('price_ceiling_cents'),
+  min_condition: cond_rank_t('min_condition').notNull(),
+  active: boolean('active').notNull(),                        // no default shown in UI → required in inserts
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const watchesRelations = relations(watches, ({ one }) => ({
   user: one(users, {
-    fields: [watches.userId],
+    fields: [watches.user_id],
     references: [users.id],
   }),
 }));
@@ -77,31 +57,19 @@ export const watchesRelations = relations(watches, ({ one }) => ({
 export type Watch = typeof watches.$inferSelect;
 export type NewWatch = typeof watches.$inferInsert;
 
-/**
- * inventory
- * Columns (per Supabase UI):
- *  id (int4, not null)        ← not marking PK here since UI didn’t show it; adjust if needed
- *  retailer (retailer_t, not null)
- *  store_id (text, not null)
- *  sku (text, nullable)
- *  title (text, not null)
- *  condition_label (text, not null)
- *  condition_rank (cond_rank_t, not null)
- *  price_cents (int4, not null)
- *  url (text, not null)
- *  seen_at (timestamptz, not null)
- */
 export const inventory = pgTable('inventory', {
+  // use serial so TS doesn’t require id on insert.
+  // if your DB column isn’t identity yet, keep your earlier ALTER TABLE to add it.
   id: serial('id').primaryKey(),
-  retailer: retailerT('retailer').notNull(),
-  storeId: text('store_id').notNull(),
+  retailer: retailer_t('retailer').notNull(),
+  store_id: text('store_id').notNull(),
   sku: text('sku'),
   title: text('title').notNull(),
-  conditionLabel: text('condition_label').notNull(),
-  conditionRank: condRankT('condition_rank').notNull(),
-  priceCents: integer('price_cents').notNull(),
+  condition_label: text('condition_label').notNull(),
+  condition_rank: cond_rank_t('condition_rank').notNull(),
+  price_cents: integer('price_cents').notNull(),
   url: text('url').notNull(),
-  seenAt: timestamp('seen_at', { withTimezone: true }).notNull(),
+  seen_at: timestamp('seen_at', { withTimezone: true }).notNull(),
 });
 
 export type Inventory = typeof inventory.$inferSelect;

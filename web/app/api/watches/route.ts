@@ -19,7 +19,7 @@ const WatchInput = z.object({
 export async function GET() {
   const s = getSession();
   if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const rows = await db.select().from(watches).where(eq(watches.userId, s.uid));
+  const rows = await db.select().from(watches).where(eq(watches.user_id, s.uid));
   return NextResponse.json({ watches: rows });
 }
 
@@ -32,15 +32,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
   const w = await db.insert(watches).values({
-    userId: s.uid,
-    retailer: parsed.data.retailer,
-    sku: parsed.data.sku,
-    keywords: parsed.data.keywords,
-    zipcode: parsed.data.zipcode,
-    radiusMiles: parsed.data.radius_miles,
-    stores: parsed.data.stores,
-    priceCeilingCents: parsed.data.price_ceiling_cents,
-    minCondition: parsed.data.min_condition,
+    user_id: s.uid,
+    retailer: parsed.data.retailer as any,
+    sku: parsed.data.sku ?? null,
+    // product_url intentionally omitted; it's nullable in DB
+    keywords: parsed.data.keywords ?? null,                                  // [] | null
+    zipcode: parsed.data.zipcode ?? null,
+    radius_miles: (parsed.data.radius_miles ?? parsed.data.radius_miles) ?? null,
+    stores: parsed.data.stores ?? null,                                      // [] | null
+    price_ceiling_cents:
+      (parsed.data.price_ceiling_cents ?? parsed.data.price_ceiling_cents) ?? null,
+    min_condition: (parsed.data.min_condition ?? parsed.data.min_condition) as any,
+    active: true, // REQUIRED (DB says NOT NULL, no default)
   }).returning();
+
   return NextResponse.json({ watch: w[0] });
 }
