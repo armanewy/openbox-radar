@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/utils/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export default async function AppPage() {
   const s = getSession();
@@ -8,7 +9,10 @@ export default async function AppPage() {
 }
 
 async function Watches() {
-  // In a moment we’ll fetch actual watches.
+  const res = await fetch("/api/watches", { cache: "no-store" });
+  const data = (await res.json()) as { watches: any[] };
+  const rows = data.watches || [];
+
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-6">
       <h1 className="text-2xl font-semibold">Your Watches</h1>
@@ -23,7 +27,29 @@ async function Watches() {
         <input name="price_ceiling_cents" type="number" placeholder="Max price (cents)" className="border rounded px-2 py-2 col-span-2" />
         <button className="px-4 py-2 bg-black text-white rounded col-span-2">Add Watch</button>
       </form>
-      <p className="text-gray-500">Watches will show here once we wire the list.</p>
+
+      <section>
+        {rows.length === 0 ? (
+          <p className="text-gray-500">No watches yet. Add one above.</p>
+        ) : (
+          <ul className="divide-y border rounded">
+            {rows.map((w) => (
+              <li key={w.id} className="p-4 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-medium">{w.retailer.toUpperCase()} {w.sku ? `• ${w.sku}` : ''}</div>
+                  <div className="text-sm text-gray-600">
+                    ZIP {w.zipcode || '—'} • radius {w.radius_miles || '—'}mi
+                  </div>
+                </div>
+                <form action={deleteWatch}>
+                  <input type="hidden" name="id" value={w.id} />
+                  <button className="px-3 py-2 border rounded">Delete</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }
@@ -44,4 +70,12 @@ async function createWatch(formData: FormData) {
     body: JSON.stringify(payload),
     cache: "no-store",
   });
+  revalidatePath("/app");
+}
+
+async function deleteWatch(formData: FormData) {
+  "use server";
+  const id = String(formData.get("id"));
+  await fetch(`/api/watches/${id}`, { method: "DELETE", cache: "no-store" });
+  revalidatePath("/app");
 }

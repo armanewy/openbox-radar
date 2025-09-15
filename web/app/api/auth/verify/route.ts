@@ -39,8 +39,8 @@ export async function GET(req: Request) {
     // create session JWT
     const session = await signSessionJWT({ sub: user.id, email: user.email });
 
-    // set cookie
-    cookies().set('obx_session', session, {
+    // set cookie (standardize to obr_session)
+    cookies().set('obr_session', session, {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
