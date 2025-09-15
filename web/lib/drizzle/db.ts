@@ -1,7 +1,7 @@
 import 'server-only';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import * as schema from './schema'; // <-- add this
+import * as schema from './schema';
 
 const pool = new Pool({
   // IMPORTANT: keep whatever TLS you settled on — this version assumes you already fixed TLS.
