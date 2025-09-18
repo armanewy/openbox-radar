@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { ExternalLink, Heart, Share2 } from "lucide-react";
 import WatchSheet from "@/components/watch/WatchSheet";
+import PriceSparkline from "@/components/cards/PriceSparkline";
 
 export type Item = {
   id: number;
@@ -82,7 +83,10 @@ export default function ItemCard({ item }: { item: Item }) {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-semibold">{dollars(item.price_cents)}</div>
+          <div className="text-lg font-semibold flex items-center gap-2 justify-end">
+            {dollars(item.price_cents)}
+            <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} />
+          </div>
           <div className="mt-2 flex items-center gap-2 justify-end">
             <a
               href={item.url}

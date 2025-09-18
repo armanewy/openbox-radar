@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import SearchHero from "@/components/SearchHero";
 import Carousel from "@/components/Carousel";
+import BestBuyAttribution from "@/components/BestBuyAttribution";
 
 export default function Page() {
   const [email, setEmail] = useState("");
@@ -62,6 +63,7 @@ export default function Page() {
         ) : (
           <Carousel items={trending} />
         )}
+        {trending.some((it: any) => it.retailer === 'bestbuy') ? <BestBuyAttribution /> : null}
       </section>
 
       <a href="/app" className="inline-block mt-2 underline">Go to app</a>

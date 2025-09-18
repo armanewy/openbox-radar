@@ -104,7 +104,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
         <FilterChips />
 
         {data.items.length === 0 && (
-          <p className="text-gray-600">No results yet. Try widening your search.</p>
+          <div className="text-gray-700 border rounded-xl p-6 bg-white/60">
+            <div className="font-semibold mb-1">No results</div>
+            <p className="text-sm mb-3">Try clearing filters or using broader keywords.</p>
+            <div className="flex items-center gap-3 text-sm">
+              <Link href="/search" className="px-3 py-1.5 border rounded">Clear all</Link>
+              <Link href="/" className="underline">See trending</Link>
+              <Link href="/stores" className="underline">Browse stores</Link>
+            </div>
+          </div>
         )}
 
         <InfiniteList
