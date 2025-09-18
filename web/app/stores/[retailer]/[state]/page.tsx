@@ -1,5 +1,5 @@
 import Link from "next/link";
-import StoreRow from "@/components/stores/StoreRow";
+import StoreList from "@/components/stores/StoreList";
 import { db } from "@/lib/drizzle/db";
 import { stores } from "@/lib/drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -27,11 +27,7 @@ export default async function RetailerStateStores({ params }: { params: { retail
       {rows.length === 0 ? (
         <p className="text-gray-600">No stores found in this state.</p>
       ) : (
-        <ul className="divide-y border rounded">
-          {rows.map((s) => (
-            <StoreRow key={s.store_id} retailer={retailer as any} store={s} />
-          ))}
-        </ul>
+        <StoreList retailer={retailer as any} stores={rows} />
       )}
       <Link href={`/stores/${retailer}`} className="inline-block underline">← Back to states</Link>
     </main>
