@@ -138,12 +138,15 @@ export default function ItemCard({ item }: { item: Item }) {
               <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} w={64} h={14} />
             </div>
             <div className="text-right shrink-0">
-              <div className="mt-1 flex items-center gap-1.5 justify-end">
+              <div className="mt-1 flex items-center gap-1 justify-end">
                 <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
                   <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={14} /> View</Button>
                 </a>
                 <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={14} /> Watch</Button>
-                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={14} /> Share</Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}>
+                  <Share2 size={14} />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
               </div>
             </div>
           </div>
