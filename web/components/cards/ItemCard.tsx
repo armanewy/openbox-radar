@@ -6,6 +6,7 @@ import WatchSheet from "@/components/watch/WatchSheet";
 import PriceSparkline from "@/components/cards/PriceSparkline";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 
 export type Item = {
   id: number;
@@ -55,8 +56,8 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
-      <div className="flex gap-4">
+    <li className="rounded-xl border shadow-card p-3 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+      <div className="flex gap-3">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">
             {(() => {
@@ -68,51 +69,49 @@ export default function ItemCard({ item }: { item: Item }) {
                     <Image
                       src={item.image_url!}
                       alt={item.title}
-                      width={96}
-                      height={96}
-                      className="h-24 w-24 object-contain rounded-lg bg-white"
-                      sizes="96px"
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 object-contain rounded-lg bg-white border"
+                      sizes="80px"
                     />
                   );
                 }
               } catch {}
               return (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.image_url!} alt={item.title} className="h-24 w-24 object-contain rounded-lg bg-white" />
+                <img src={item.image_url!} alt={item.title} className="h-20 w-20 object-contain rounded-lg bg-white border" />
               );
             })()}
           </a>
         ) : (
-          <div className="h-24 w-24 rounded-lg bg-gray-100 border shrink-0" />
+          <div className="h-20 w-20 rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[11px] text-gray-500">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 overflow-hidden whitespace-nowrap">
             <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
             <span>last seen {timeAgo(item.seen_at)}</span>
-            <span className="px-1.5 py-0.5 rounded bg-gray-100 border text-gray-700 whitespace-nowrap">
-              {item.retailer}
-            </span>
-            <span className="px-1.5 py-0.5 rounded bg-green-50 border border-green-200 text-green-700 whitespace-nowrap">
-              {item.condition_label}
-            </span>
+            <Badge className="whitespace-nowrap">{item.retailer}</Badge>
+            <Badge variant="success" className="whitespace-nowrap">{item.condition_label}</Badge>
           </div>
-          <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium hover:underline line-clamp-2">
+          <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
           </a>
-          <div className="mt-1 text-xs text-gray-600 truncate">
-            {item.store?.name || item.store_id}
-            {item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ""}` : ""}
+          <div className="mt-1 text-[11px] text-gray-600 truncate">
+            {item.sku ? <span className="mr-2">{item.sku}</span> : null}
+            <span>{item.store?.name || item.store_id}{item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ""}` : ""}</span>
           </div>
-          <div className="mt-2 flex items-end justify-between gap-3">
-            <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} />
-            <div className="text-right">
-              <div className="text-lg font-semibold">{dollars(item.price_cents)}</div>
-              <div className="mt-2 flex items-center gap-2 justify-end">
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <div className="hidden sm:block">
+              <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} w={72} h={16} />
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-base font-semibold">{dollars(item.price_cents)}</div>
+              <div className="mt-1 flex items-center gap-1.5 justify-end">
                 <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
-                  <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={16} /> View</Button>
+                  <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={14} /> View</Button>
                 </a>
-                <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={16} /> Watch</Button>
-                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={16} /></Button>
+                <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={14} /> Watch</Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={14} /></Button>
               </div>
             </div>
           </div>

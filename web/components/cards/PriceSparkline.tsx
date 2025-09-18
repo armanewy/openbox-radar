@@ -7,11 +7,14 @@ type Props = {
   sku?: string | null;
   url?: string | null;
   store_id?: string | null;
+  w?: number;
+  h?: number;
+  className?: string;
 };
 
 type Point = { t: string; p: number };
 
-export default function PriceSparkline({ retailer, sku, url, store_id }: Props) {
+export default function PriceSparkline({ retailer, sku, url, store_id, w = 64, h = 16, className }: Props) {
   const [data, setData] = useState<Point[] | null>(null);
 
   useEffect(() => {
@@ -33,8 +36,8 @@ export default function PriceSparkline({ retailer, sku, url, store_id }: Props) 
   const max = Math.max(...data.map((d) => d.p));
 
   return (
-    <div className="h-8 w-24">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className={""} style={{ width: w, height: h }}>
+      <ResponsiveContainer width="100%" height="100%" className={className}>
         <AreaChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
@@ -42,10 +45,9 @@ export default function PriceSparkline({ retailer, sku, url, store_id }: Props) 
               <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
             </linearGradient>
           </defs>
-          <Area type="monotone" dataKey="p" stroke="#10b981" fill="url(#spark)" strokeWidth={1.5} isAnimationActive={false} />
+          <Area type="monotone" dataKey="p" stroke="#10b981" fill="url(#spark)" strokeWidth={1.2} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
-
