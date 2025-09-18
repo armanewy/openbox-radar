@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/drizzle/db";
 import { inventory, users, watches } from "@/lib/drizzle/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { fetchDevItems } from "@/lib/retailers/dev";
 import { sendAlertEmail } from "@/lib/alerts/email";
+import { ingestBestBuyForSkus } from "@/lib/retailers/bestbuy/ingest";
 
 const DROP_MIN_CENTS = 2500;   // $25
 const DROP_MIN_PCT = 5;        // 5%
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
 
   // Pull active watches
   const ws = await db.select().from(watches).where(eq(watches.active, true));
+
+  // Purge expired Best Buy rows (TTL ≤72h; we use 71h)
+  await db.delete(inventory).where(and(eq(inventory.source, 'bestbuy' as any), lt(inventory.expires_at, new Date())));
 
   let checked = 0;
   for (const w of ws) {
@@ -82,6 +86,15 @@ export async function GET(req: NextRequest) {
       }
 
       // TODO: alerts table not implemented in schema
+    }
+  }
+
+  // Fetch Best Buy via API for watched SKUs (guarded by flag)
+  if (process.env.BESTBUY_ENABLED === '1') {
+    const bbySkus = ws.filter(w => (w.retailer as any) === 'bestbuy' && !!w.sku).map(w => w.sku!) as string[];
+    if (bbySkus.length) {
+      const { inserted } = await ingestBestBuyForSkus(bbySkus);
+      console.log(`[cron] bestbuy inserted: ${inserted} rows for ${bbySkus.length} skus`);
     }
   }
 

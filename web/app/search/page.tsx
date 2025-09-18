@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BestBuyAttribution from "@/components/BestBuyAttribution";
 import { absoluteUrl } from "@/lib/utils/url";
 
 type Item = {
@@ -75,6 +76,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const radius_miles = typeof searchParams.radius_miles === "string" ? searchParams.radius_miles : "";
 
   const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles };
+
+  const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
   return (
     <main className="max-w-6xl mx-auto p-6 grid grid-cols-12 gap-6">
@@ -163,6 +166,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
             </li>
           ))}
         </ul>
+
+        {hasBestBuy ? <BestBuyAttribution /> : null}
 
         {data.nextCursor && (
           <div className="mt-6">

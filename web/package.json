@@ -10,6 +10,7 @@
     "drizzle:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "p-throttle": "^5.1.0",
     "@vercel/postgres": "0.8.0",
     "drizzle-orm": "0.44.5",
     "jose": "^6.1.0",
