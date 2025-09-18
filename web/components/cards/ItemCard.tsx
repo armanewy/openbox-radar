@@ -47,6 +47,21 @@ function stalenessColor(iso: string) {
   return "bg-gray-400";
 }
 
+function conditionShortLabel(rank: string) {
+  switch ((rank || '').toLowerCase()) {
+    case 'certified':
+      return 'Certified';
+    case 'excellent':
+      return 'Excellent';
+    case 'satisfactory':
+      return 'Satisfactory';
+    case 'fair':
+      return 'Fair';
+    default:
+      return 'Unknown';
+  }
+}
+
 export default function ItemCard({ item }: { item: Item }) {
   const copy = useCallback(async () => {
     try {
@@ -93,11 +108,11 @@ export default function ItemCard({ item }: { item: Item }) {
           <div className="h-[72px] w-[72px] rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 overflow-hidden whitespace-nowrap">
+          <div className="flex items-center gap-2 pr-20 text-[11px] text-gray-500 overflow-hidden whitespace-nowrap">
             <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
             <span>last seen {timeAgo(item.seen_at)}</span>
             <Badge className="whitespace-nowrap">{item.retailer}</Badge>
-            <Badge variant="success" className="whitespace-nowrap">{item.condition_label}</Badge>
+            <Badge variant="success" className="whitespace-nowrap">{conditionShortLabel(item.condition_rank)}</Badge>
           </div>
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
