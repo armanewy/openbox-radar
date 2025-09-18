@@ -71,13 +71,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="relative rounded-xl border shadow-card p-2.5 pr-16 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
-      {/* Price badge (top-right) */}
-      <div className="absolute top-2 right-2 z-10">
-        <span className="inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
-          {dollars(item.price_cents)}
-        </span>
-      </div>
+    <li className="rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
       <div className="flex gap-3">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">
@@ -108,11 +102,16 @@ export default function ItemCard({ item }: { item: Item }) {
           <div className="h-[72px] w-[72px] rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 pr-20 text-[11px] text-gray-500 overflow-hidden whitespace-nowrap">
-            <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
-            <span>last seen {timeAgo(item.seen_at)}</span>
-            <Badge className="whitespace-nowrap">{item.retailer}</Badge>
-            <Badge variant="success" className="whitespace-nowrap">{conditionShortLabel(item.condition_rank)}</Badge>
+          <div className="flex items-center justify-between gap-2 text-[11px] text-gray-500">
+            <div className="min-w-0 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+              <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
+              <span>last seen {timeAgo(item.seen_at)}</span>
+              <Badge className="whitespace-nowrap">{item.retailer}</Badge>
+              <Badge variant="success" className="whitespace-nowrap">{conditionShortLabel(item.condition_rank)}</Badge>
+            </div>
+            <span className="shrink-0 inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
+              {dollars(item.price_cents)}
+            </span>
           </div>
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
