@@ -56,7 +56,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="relative rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+    <li className="relative rounded-xl border shadow-card p-2.5 pr-16 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
       {/* Price badge (top-right) */}
       <div className="absolute top-2 right-2 z-10">
         <span className="inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
