@@ -1,6 +1,9 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useOptimisticWatch, type WatchPayload } from "@/lib/hooks/useOptimisticWatch";
+import { Drawer, DrawerContent, DrawerHeader, DrawerClose } from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   open: boolean;
@@ -41,52 +44,54 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   }
 
   return (
-    <div className={open ? "fixed inset-0 z-50" : "hidden"}>
-      <div className="absolute inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-xl p-4 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Create Watch</h2>
-          <button onClick={() => onOpenChange(false)} className="px-3 py-1 rounded border">Close</button>
-        </div>
-        <div className="space-y-3">
-          <div className="text-sm text-gray-600">Retailer</div>
-          <div className="px-2 py-1 rounded bg-gray-100 inline-block text-sm">{defaults.retailer}</div>
-          {defaults.sku ? (
-            <div className="text-sm text-gray-600">SKU: <span className="font-medium">{defaults.sku}</span></div>
-          ) : null}
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-sm text-gray-600">ZIP</label>
-            <input className="mt-1 w-full border rounded px-3 py-2" value={zipcode} onChange={(e) => setZipcode(e.target.value)} />
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent side="right">
+        <div className="flex h-full flex-col gap-4">
+          <DrawerHeader>
+            <h2 className="text-lg font-semibold">Create Watch</h2>
+            <DrawerClose asChild>
+              <Button variant="outline" size="sm">Close</Button>
+            </DrawerClose>
+          </DrawerHeader>
+          <div className="px-1 space-y-3">
+            <div className="text-sm text-gray-600">Retailer</div>
+            <div className="px-2 py-1 rounded bg-gray-100 inline-block text-sm">{defaults.retailer}</div>
+            {defaults.sku ? (
+              <div className="text-sm text-gray-600">SKU: <span className="font-medium">{defaults.sku}</span></div>
+            ) : null}
           </div>
-          <div>
-            <label className="block text-sm text-gray-600">Radius (mi)</label>
-            <input className="mt-1 w-full border rounded px-3 py-2" type="number" value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
+          <div className="grid grid-cols-2 gap-2 px-1">
+            <div>
+              <label className="block text-sm text-gray-600">ZIP</label>
+              <Input className="mt-1" value={zipcode} onChange={(e) => setZipcode(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600">Radius (mi)</label>
+              <Input className="mt-1" type="number" value={radius} onChange={(e) => setRadius(Number(e.target.value))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 px-1">
+            <div>
+              <label className="block text-sm text-gray-600">Min condition</label>
+              <select className="mt-1 w-full border rounded px-3 py-2" value={minCondition} onChange={(e) => setMinCondition(e.target.value)}>
+                <option value="certified">Certified</option>
+                <option value="excellent">Excellent</option>
+                <option value="satisfactory">Satisfactory</option>
+                <option value="fair">Fair</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600">Max price (USD)</label>
+              <Input className="mt-1" type="number" value={priceCeiling} onChange={(e) => setPriceCeiling(e.target.value)} />
+            </div>
+          </div>
+          <div className="mt-auto flex justify-end gap-2 px-1 pb-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={submit} disabled={loading}>{loading ? "Creating…" : "Create Watch"}</Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-sm text-gray-600">Min condition</label>
-            <select className="mt-1 w-full border rounded px-3 py-2" value={minCondition} onChange={(e) => setMinCondition(e.target.value)}>
-              <option value="certified">Certified</option>
-              <option value="excellent">Excellent</option>
-              <option value="satisfactory">Satisfactory</option>
-              <option value="fair">Fair</option>
-              <option value="unknown">Unknown</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600">Max price (USD)</label>
-            <input className="mt-1 w-full border rounded px-3 py-2" type="number" value={priceCeiling} onChange={(e) => setPriceCeiling(e.target.value)} />
-          </div>
-        </div>
-        <div className="mt-auto flex justify-end gap-2">
-          <button className="px-4 py-2 border rounded" onClick={() => onOpenChange(false)}>Cancel</button>
-          <button className="px-4 py-2 bg-black text-white rounded" onClick={submit} disabled={loading}>{loading ? "Creating…" : "Create Watch"}</button>
-        </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
-

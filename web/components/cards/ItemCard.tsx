@@ -131,7 +131,7 @@ export default function ItemCard({ item }: { item: Item }) {
                   <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={14} /> View</Button>
                 </a>
                 <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={14} /> Watch</Button>
-                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={14} /></Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={14} /> Share</Button>
               </div>
             </div>
           </div>
