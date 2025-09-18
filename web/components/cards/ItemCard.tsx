@@ -52,7 +52,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur">
+    <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
       <div className="flex gap-4">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">

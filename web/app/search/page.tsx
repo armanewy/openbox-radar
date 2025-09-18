@@ -4,6 +4,8 @@ import { absoluteUrl } from "@/lib/utils/url";
 import InfiniteList from "@/components/InfiniteList";
 import FilterChips from "@/components/FilterChips";
 import SortMenu from "@/components/SortMenu";
+import FilterDrawer from "@/components/FilterDrawer";
+import SearchFiltersForm from "@/components/SearchFiltersForm";
 
 type Item = {
   id: number;
@@ -86,58 +88,11 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   return (
     <main className="container mx-auto max-w-7xl p-4 md:p-6 grid grid-cols-12 gap-6">
       <aside className="col-span-12 md:col-span-3">
-        <div className="sticky top-3 border rounded-xl p-4 space-y-3 bg-white/70 backdrop-blur shadow-card">
-          <form method="GET" className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-600">Search</label>
-              <input name="q" defaultValue={q} placeholder="Title or SKU"
-                     className="mt-1 w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600">Retailer</label>
-              <select name="retailer" defaultValue={retailer} className="mt-1 w-full border rounded-lg px-3 py-2">
-                <option value="">All</option>
-                <option value="bestbuy">Best Buy</option>
-                <option value="microcenter">Micro Center</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600">SKU</label>
-              <input name="sku" defaultValue={sku} placeholder="Exact or partial" className="mt-1 w-full border rounded-lg px-3 py-2" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-600">Min condition</label>
-              <select name="min_condition" defaultValue={min_condition} className="mt-1 w-full border rounded-lg px-3 py-2">
-                <option value="">Any</option>
-                <option value="certified">Certified</option>
-                <option value="excellent">Excellent</option>
-                <option value="satisfactory">Satisfactory</option>
-                <option value="fair">Fair</option>
-                <option value="unknown">Unknown</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm text-gray-600">Min price (USD)</label>
-                <input name="price_min" type="number" defaultValue={price_min} className="mt-1 w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600">Max price (USD)</label>
-                <input name="price_max" type="number" defaultValue={price_max} className="mt-1 w-full border rounded-lg px-3 py-2" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm text-gray-600">ZIP</label>
-                <input name="zip" defaultValue={zip} className="mt-1 w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600">Radius (mi)</label>
-                <input name="radius_miles" type="number" defaultValue={radius_miles} className="mt-1 w-full border rounded-lg px-3 py-2" />
-              </div>
-            </div>
-            <button className="w-full mt-2 px-4 py-2 bg-black text-white rounded-lg">Apply</button>
-          </form>
+        <FilterDrawer>
+          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
+        </FilterDrawer>
+        <div className="hidden md:block sticky top-3 border rounded-xl p-4 space-y-3 bg-white/70 backdrop-blur shadow-card">
+          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
         </div>
       </aside>
 
