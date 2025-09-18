@@ -14,7 +14,13 @@ if (process.env.SUPABASE_CA_B64) {
 }
 
 const caString = caBuffer ? caBuffer.toString('utf8') : undefined;
-const sslOption = caString ? { ca: [caString], rejectUnauthorized: true } : undefined;
+// In local/dev, allow insecure fallback if no CA is provided to avoid SSL errors during CLI migrations.
+const allowInsecure = process.env.DRIZZLE_ALLOW_INSECURE === '1' || process.env.NODE_ENV !== 'production';
+const sslOption = caString
+  ? { ca: [caString], rejectUnauthorized: true }
+  : allowInsecure
+    ? { rejectUnauthorized: false }
+    : undefined;
 
 export default defineConfig({
   dialect: 'postgresql',
