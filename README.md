@@ -1,101 +1,199 @@
-# Open-Box Radar — MVP Scaffold
+# Open-Box Radar
 
-This is a minimal scaffold for the Open-Box Radar MVP: a Next.js web app + Cloudflare Worker poller + Postgres (Supabase) + Drizzle ORM.
+Next.js web app + Cloudflare Worker that collects open-box deals, normalizes them into Postgres, and exposes search + browse. Micro Center is scraped via DOM; Best Buy uses the official Open Box API. Freshness is enforced via TTL; ingestion is deduped.
 
-## What’s here
-- `web/` — Next.js app (watch CRUD, auth stubs, landing)
-- `worker/` — Cloudflare Worker (cron poller + retailer adapters)
-- `db/` — Drizzle schema + seed placeholders
-- `.env.example` — environment variables you’ll need
+## Repo Layout
+- `web/` — Next.js 14 app
+  - Drizzle ORM + Postgres (Supabase)
+  - API routes: ingest, search, cron, health, auth stubs
+  - UI: search page with thumbnails, attribution
+- `worker/` — Cloudflare Worker
+  - Cron scheduler, retailer adapters (Micro Center DOM, Best Buy API, stubs)
+- `db/` — SQL indexes and notes
+- `.env.example` — env var checklist
 
-## Quick start
+## Quick Start (Dev)
+1) Prereqs
+- Node 20+, pnpm (or npm), Wrangler CLI
+- A Postgres DB (Supabase works great)
 
-1) **Install prerequisites**
-- Node 20+ and pnpm (or npm)
-- Wrangler CLI (`npm i -g wrangler`)
-- Create a Supabase project (or Postgres you host)
+2) Configure env
+- Copy `.env.example` → `.env` and fill values.
+- In `web/.env` set `DATABASE_URL`, `APP_BASE_URL`, `CRON_SECRET`, optional email creds.
 
-2) **Copy env and fill values**
-```bash
-cp .env.example .env
-```
-
-3) **Install deps & run web**
+3) Install and run web
 ```bash
 cd web
 pnpm install
-pnpm dev
+pnpm dev  # Next runs on :3000 or :3001
 ```
 
-4) **Run the worker locally**
+4) Run Worker
 ```bash
-cd ../worker
+cd worker
 pnpm install
-wrangler dev
+pnpm dev   # serves http://127.0.0.1:8787
 ```
 
-5) **Create tables (Drizzle)**
-Adjust the connection string in `web/lib/drizzle/drizzle.config.ts`, then:
+5) Create/verify DB schema
+- Prefer explicit SQL migrations via Supabase SQL editor or psql (see Migrations below).
+- Add performance indexes from `db/sql/indexes.sql`.
+
+6) Test flows
+- Trigger Worker → Web ingest:
 ```bash
-cd web
-pnpm drizzle:push
+curl -H "x-cron-secret: <CRON_SECRET>" http://127.0.0.1:8787/cron
 ```
+- Browse: http://localhost:3000/search (or :3001)
 
-6) **Add search indexes (recommended for performance)**
-Run the SQL in `db/sql/indexes.sql` against your database (e.g., via Supabase SQL editor or `psql`).
+## Environment Variables
 
+Web (Vercel / local `.env`)
+- `DATABASE_URL` — Postgres connection
+- `APP_BASE_URL` — e.g. `http://localhost:3000`
+- `CRON_SECRET` — shared secret for ingest/cron
+- Best Buy (optional web-side ingest):
+  - `BESTBUY_ENABLED=1`
+  - `BESTBUY_API_KEY=<key>`
+  - `BESTBUY_RENDER_ENABLED=1` (optional toggle to hide/show BB cards)
+  - `NEXT_PUBLIC_BESTBUY_ATTRIB_DISABLED=1` hides attribution
+- TLS for Drizzle CLI (optional):
+  - `SUPABASE_CA_B64` (preferred) or set `DRIZZLE_ALLOW_INSECURE=1` for local CLI
+
+Worker (Wrangler / secrets)
+- `CRON_SHARED_SECRET` — must match web `CRON_SECRET`
+- `INGEST_URL` — dev: `http://localhost:3001/api/ingest` (or :3000)
+- `USE_REAL_MICROCENTER` — `1` to scrape, `0` for stub
+- `USE_REAL_BESTBUY` — `1` to use API, `0` for stub
+- Best Buy inputs (for Worker run):
+  - `BESTBUY_API_KEY` (Wrangler secret)
+  - `BESTBUY_SKUS` (comma list) or `BESTBUY_CATEGORY` (e.g., `abcat0502000`), `BESTBUY_PAGE_SIZE`
+
+## Data Model (Drizzle)
+
+`web/lib/drizzle/schema.ts`
+- `inventory`
+  - `id serial PK`
+  - `retailer retailer_t`, `store_id text`, `sku text`
+  - `title text`, `condition_label text`, `condition_rank cond_rank_t`
+  - `price_cents int`, `url text`, `image_url text`
+  - `seen_at timestamptz`
+  - `source text`, `fetched_at timestamptz`, `expires_at timestamptz`
+- `watches`: user watches (retailer, sku/keywords, geo prefs)
+- `stores`: store metadata (name/city/state/zip)
+- `users`, `magic_tokens`: minimal email auth
+
+Migrations added (SQL files under `web/lib/drizzle/migrations/`)
+- `0020_bby_ttl.sql` — add `source`, `fetched_at`, `expires_at` + index on `expires_at`
+- `0021_inventory_image_url.sql` — add `image_url`
+- `0022_inventory_unique_snapshot.sql` — unique constraints for dedupe
+
+Indexes (recommended)
 ```sql
--- db/sql/indexes.sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_inventory_title_trgm ON inventory USING gin (title gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_inventory_sku_trgm   ON inventory USING gin (sku gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_inventory_seen_at ON inventory (seen_at DESC);
-CREATE INDEX IF NOT EXISTS idx_inventory_store   ON inventory (retailer, store_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_seen_at    ON inventory (seen_at DESC);
+CREATE INDEX IF NOT EXISTS idx_inventory_store      ON inventory (retailer, store_id);
 ```
 
-## Deploy outline
+## Ingestion Pipeline
 
-- **Domain**: buy at Cloudflare or Namecheap; set Cloudflare for DNS.
-- **Web**: deploy `web/` to Vercel; add your domain; set env vars.
-- **DB**: Supabase Postgres; set `DATABASE_URL` in Vercel/Worker.
-- **Email**: Postmark or Resend key in env.
-- **Worker**: `wrangler deploy` + Cron Triggers (15/60 min) in `wrangler.toml`.
+Web endpoint: `POST /api/ingest`
+- Auth: `Authorization: Bearer <CRON_SECRET>` or header `x-cron-secret: <CRON_SECRET>`
+- Payload: `{ items: Array<{ retailer, storeId, sku?, title, conditionLabel, priceCents, url, seenAt?, imageUrl? }> }`
+- Behavior:
+  - Normalizes condition → `condition_rank`
+  - Inserts snapshots with `seen_at`
+  - Dedupe:
+    - Time-window skip for identical snapshots
+    - Unique constraints on `(retailer,store_id,url,price_cents)` and `(retailer,store_id,sku,price_cents)` with `onConflictDoNothing()`
 
-### Cloudflare Worker → Web Ingest (Option B)
+Worker sender
+- `worker/src/scheduler.ts` batches items and POSTs to `INGEST_URL` with bearer `CRON_SHARED_SECRET`.
+- Returns `{ ok, ingested, status }` or a JSON error on failure.
 
-The Worker scrapes retailers and POSTs items to the web app for ingestion.
+## Retailer Adapters
 
-1) Configure web (Vercel):
-   - Set `CRON_SECRET` env var (same value you’ll use in the Worker as `CRON_SHARED_SECRET`).
-   - Deploy web so `POST /api/ingest` is available.
+Micro Center
+- Real DOM scrape: `worker/src/adapters/microcenter_dom.ts` via `linkedom`
+- Toggle with `USE_REAL_MICROCENTER=1` (else stub: `adapters/stubs.ts`)
 
-2) Configure Worker:
-   - Edit `worker/wrangler.toml` and set:
-     - `CRON_SHARED_SECRET = "<same-as-CRON_SECRET>"`
-     - `INGEST_URL = "https://<your-web-domain>/api/ingest"`
-     - Adjust `[triggers].crons` as desired (e.g., every 10 minutes).
-   - Install and deploy:
-     ```bash
-     cd worker
-     pnpm install
-     pnpm deploy
-     ```
+Best Buy (official API)
+- Worker adapter: `worker/src/adapters/bestbuy_api.ts`
+  - Queries Open Box endpoints (beta) and maps `title`, `offers.prices.current`, `links.web`, `images.standard`
+  - Returns `imageUrl` to render thumbnails
+- Configure via `USE_REAL_BESTBUY=1`, `BESTBUY_API_KEY`, and either `BESTBUY_SKUS` or `BESTBUY_CATEGORY`
 
-3) Test manually:
-   - Invoke the Worker’s manual endpoint:
-     ```bash
-     curl -H "x-cron-secret: <CRON_SHARED_SECRET>" https://<your-worker-subdomain>.workers.dev/cron
-     ```
-   - Visit `/search` on your site and look for DEV items.
+Web-side Best Buy (optional)
+- Throttled client: `web/lib/retailers/bestbuy/client.ts` (p-throttle @ 5 rps)
+- Adapter & ingest: `web/lib/retailers/bestbuy/adapter.ts`, `.../ingest.ts` with 71h TTL (`expires_at`)
+- Triggered by `web/app/api/cron/route.ts` when `BESTBUY_ENABLED=1` and Best Buy watches exist
 
-Notes:
-- `web/app/api/ingest` accepts batches (up to 1000 items) and writes to `inventory` with normalized condition ranks. It requires `Authorization: Bearer <CRON_SECRET>` or `x-cron-secret: <CRON_SECRET>` in production.
-- The current Worker adapters are stubs; replace with real BestBuy/MicroCenter scrapers next.
+## Cron Jobs
 
----
+Worker cron
+- `worker/src/index.ts` exposes `/cron` (requires `x-cron-secret`) and scheduled triggers via Wrangler.
+- Scheduler (`worker/src/scheduler.ts`) picks Micro Center / Best Buy real adapters or stubs based on flags.
 
-### Notes
+Web cron
+- `web/app/api/cron/route.ts`
+  - Purges expired Best Buy rows: `source='bestbuy' AND expires_at < now()`
+  - Iterates watches and inserts dev items (placeholder)
+  - If `BESTBUY_ENABLED=1`, ingests watched Best Buy SKUs via web-side adapter
 
-- Retailer adapters are stubs—fill selectors as you implement.
-- Magic-link auth is stubbed; you can swap in Supabase Auth easily.
-- Keep polling polite; honor robots and add jitter/backoff.
+## Search API & UI
+
+Search API: `GET /api/inventory/search`
+- Filters: `q`, `retailer`, `store_id` (repeat/comma), `sku`, `price_min/max` (USD), `min_condition`
+- Pagination: cursor on `(seen_at, id)`
+- Joins `stores` to enrich display fields
+- Includes `image_url` in results
+
+UI: `web/app/search/page.tsx`
+- Filter sidebar and results list with condition/price/store
+- Thumbnails from `image_url`
+- “View at Retailer” uses direct retailer URLs (nofollow + noopener)
+- Best Buy attribution: `web/components/BestBuyAttribution.tsx` (shown when results include Best Buy items)
+
+## Deployment
+
+Web (Vercel)
+- Set env: `DATABASE_URL`, `CRON_SECRET`, optional email, Best Buy flags
+- Optionally set `SUPABASE_CA_B64` for strict TLS
+
+Worker (Cloudflare)
+- `worker/wrangler.toml` — name, triggers, vars
+- Set secrets via Wrangler:
+```bash
+cd worker
+wrangler secret put CRON_SHARED_SECRET
+wrangler secret put BESTBUY_API_KEY
+```
+- Set `INGEST_URL=https://<your-web-domain>/api/ingest`
+
+## Runbook
+
+Local dev
+- Web: `cd web && pnpm dev`
+- Worker: `cd worker && pnpm dev`
+- Trigger: `curl -H "x-cron-secret: <CRON_SECRET>" http://127.0.0.1:8787/cron`
+- Inspect: `http://localhost:3000/api/inventory/search?limit=5`
+
+Migrations
+- Apply SQL in `web/lib/drizzle/migrations/*.sql` via Supabase SQL editor or:
+```bash
+psql "$DATABASE_URL" -f web/lib/drizzle/migrations/0020_bby_ttl.sql
+psql "$DATABASE_URL" -f web/lib/drizzle/migrations/0021_inventory_image_url.sql
+psql "$DATABASE_URL" -f web/lib/drizzle/migrations/0022_inventory_unique_snapshot.sql
+```
+- Note: avoid `drizzle:push` on existing DBs with custom types — use SQL migrations instead.
+
+TLS & Drizzle CLI
+- Preferred: set `SUPABASE_CA_B64` so CLI can verify TLS
+- Dev fallback: `DRIZZLE_ALLOW_INSECURE=1` (and if needed `NODE_TLS_REJECT_UNAUTHORIZED=0`) for CLI-only operations
+
+## Notes & Limitations
+- Best Buy Open Box API doesn’t expose store-level stock; items represent available open-box offers. Links expire after ~7 days; TTL is enforced (71h).
+- ZIP/radius filtering is a placeholder; needs ZIP → lat/lng table and distance filtering.
+- Alerts/auth are minimal; extend as needed.
