@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ExternalLink, Heart, Share2 } from "lucide-react";
 import WatchSheet from "@/components/watch/WatchSheet";
 import PriceSparkline from "@/components/cards/PriceSparkline";
+import Image from "next/image";
 
 export type Item = {
   id: number;
@@ -57,8 +58,28 @@ export default function ItemCard({ item }: { item: Item }) {
       <div className="flex gap-4">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.image_url} alt={item.title} className="h-24 w-24 object-contain rounded-lg bg-white" />
+            {(() => {
+              try {
+                const u = new URL(item.image_url!);
+                const isBbyCdn = u.hostname.endsWith("bbystatic.com");
+                if (isBbyCdn) {
+                  return (
+                    <Image
+                      src={item.image_url!}
+                      alt={item.title}
+                      width={96}
+                      height={96}
+                      className="h-24 w-24 object-contain rounded-lg bg-white"
+                      sizes="96px"
+                    />
+                  );
+                }
+              } catch {}
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.image_url!} alt={item.title} className="h-24 w-24 object-contain rounded-lg bg-white" />
+              );
+            })()}
           </a>
         ) : (
           <div className="h-24 w-24 rounded-lg bg-gray-100 border shrink-0" />
