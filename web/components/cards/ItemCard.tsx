@@ -56,7 +56,13 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="rounded-xl border shadow-card p-3 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+    <li className="relative rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+      {/* Price badge (top-right) */}
+      <div className="absolute top-2 right-2 z-10">
+        <span className="inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
+          {dollars(item.price_cents)}
+        </span>
+      </div>
       <div className="flex gap-3">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">
@@ -69,22 +75,22 @@ export default function ItemCard({ item }: { item: Item }) {
                     <Image
                       src={item.image_url!}
                       alt={item.title}
-                      width={80}
-                      height={80}
-                      className="h-20 w-20 object-contain rounded-lg bg-white border"
-                      sizes="80px"
+                      width={72}
+                      height={72}
+                      className="h-[72px] w-[72px] object-contain rounded-lg bg-white border"
+                      sizes="72px"
                     />
                   );
                 }
               } catch {}
               return (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.image_url!} alt={item.title} className="h-20 w-20 object-contain rounded-lg bg-white border" />
+                <img src={item.image_url!} alt={item.title} className="h-[72px] w-[72px] object-contain rounded-lg bg-white border" />
               );
             })()}
           </a>
         ) : (
-          <div className="h-20 w-20 rounded-lg bg-gray-100 border shrink-0" />
+          <div className="h-[72px] w-[72px] rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[11px] text-gray-500 overflow-hidden whitespace-nowrap">
@@ -102,10 +108,9 @@ export default function ItemCard({ item }: { item: Item }) {
           </div>
           <div className="mt-2 flex items-center justify-between gap-3">
             <div className="hidden sm:block">
-              <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} w={72} h={16} />
+              <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} w={64} h={14} />
             </div>
             <div className="text-right shrink-0">
-              <div className="text-base font-semibold">{dollars(item.price_cents)}</div>
               <div className="mt-1 flex items-center gap-1.5 justify-end">
                 <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
                   <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={14} /> View</Button>
