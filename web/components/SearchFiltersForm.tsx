@@ -10,12 +10,15 @@ type Props = {
   radius_miles: string;
 };
 
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
 export default function SearchFiltersForm({ q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles }: Props) {
   return (
     <form method="GET" className="space-y-3">
       <div>
         <label className="block text-sm text-gray-600">Search</label>
-        <input name="q" defaultValue={q} placeholder="Title or SKU" className="mt-1 w-full border rounded-lg px-3 py-2" />
+        <Input name="q" defaultValue={q} placeholder="Title or SKU" />
       </div>
       <div>
         <label className="block text-sm text-gray-600">Retailer</label>
@@ -27,7 +30,7 @@ export default function SearchFiltersForm({ q, retailer, sku, min_condition, pri
       </div>
       <div>
         <label className="block text-sm text-gray-600">SKU</label>
-        <input name="sku" defaultValue={sku} placeholder="Exact or partial" className="mt-1 w-full border rounded-lg px-3 py-2" />
+        <Input name="sku" defaultValue={sku} placeholder="Exact or partial" />
       </div>
       <div>
         <label className="block text-sm text-gray-600">Min condition</label>
@@ -43,25 +46,24 @@ export default function SearchFiltersForm({ q, retailer, sku, min_condition, pri
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-sm text-gray-600">Min price (USD)</label>
-          <input name="price_min" type="number" defaultValue={price_min} className="mt-1 w-full border rounded-lg px-3 py-2" />
+          <Input name="price_min" type="number" defaultValue={price_min} />
         </div>
         <div>
           <label className="block text-sm text-gray-600">Max price (USD)</label>
-          <input name="price_max" type="number" defaultValue={price_max} className="mt-1 w-full border rounded-lg px-3 py-2" />
+          <Input name="price_max" type="number" defaultValue={price_max} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-sm text-gray-600">ZIP</label>
-          <input name="zip" defaultValue={zip} className="mt-1 w-full border rounded-lg px-3 py-2" />
+          <Input name="zip" defaultValue={zip} />
         </div>
         <div>
           <label className="block text-sm text-gray-600">Radius (mi)</label>
-          <input name="radius_miles" type="number" defaultValue={radius_miles} className="mt-1 w-full border rounded-lg px-3 py-2" />
+          <Input name="radius_miles" type="number" defaultValue={radius_miles} />
         </div>
       </div>
-      <button className="w-full mt-2 px-4 py-2 bg-black text-white rounded-lg">Apply</button>
+      <Button className="w-full mt-2">Apply</Button>
     </form>
   );
 }
-

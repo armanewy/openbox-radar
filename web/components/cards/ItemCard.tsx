@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { ExternalLink, Heart, Share2 } from "lucide-react";
 import WatchSheet from "@/components/watch/WatchSheet";
 import PriceSparkline from "@/components/cards/PriceSparkline";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export type Item = {
@@ -54,7 +55,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+    <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
       <div className="flex gap-4">
         {item.image_url ? (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className="block shrink-0">
@@ -85,47 +86,35 @@ export default function ItemCard({ item }: { item: Item }) {
           <div className="h-24 w-24 rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-[11px] text-gray-500">
             <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
             <span>last seen {timeAgo(item.seen_at)}</span>
-            <span className="px-1.5 py-0.5 rounded bg-gray-100 border text-gray-700">
+            <span className="px-1.5 py-0.5 rounded bg-gray-100 border text-gray-700 whitespace-nowrap">
               {item.retailer}
             </span>
-            <span className="px-1.5 py-0.5 rounded bg-green-50 border border-green-200 text-green-700">
+            <span className="px-1.5 py-0.5 rounded bg-green-50 border border-green-200 text-green-700 whitespace-nowrap">
               {item.condition_label}
             </span>
           </div>
-          <a href={item.url} target="_blank" rel="noopener" className="mt-1 block font-medium hover:underline">
+          <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium hover:underline line-clamp-2">
             {item.title}
           </a>
-          <div className="mt-1 text-sm text-gray-600 truncate">
+          <div className="mt-1 text-xs text-gray-600 truncate">
             {item.store?.name || item.store_id}
             {item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ""}` : ""}
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-lg font-semibold flex items-center gap-2 justify-end">
-            {dollars(item.price_cents)}
+          <div className="mt-2 flex items-end justify-between gap-3">
             <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} />
-          </div>
-          <div className="mt-2 flex items-center gap-2 justify-end">
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="inline-flex items-center gap-1 px-3 py-2 border rounded-lg hover:bg-gray-50"
-            >
-              <ExternalLink size={16} /> View
-            </a>
-            <button
-              onClick={() => setOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-black text-white hover:opacity-90"
-            >
-              <Heart size={16} /> Watch
-            </button>
-            <button onClick={copy} className="inline-flex items-center gap-1 px-2.5 py-2 border rounded-lg hover:bg-gray-50">
-              <Share2 size={16} />
-            </button>
+            <div className="text-right">
+              <div className="text-lg font-semibold">{dollars(item.price_cents)}</div>
+              <div className="mt-2 flex items-center gap-2 justify-end">
+                <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
+                  <Button variant="outline" size="sm" className="inline-flex gap-1"><ExternalLink size={16} /> View</Button>
+                </a>
+                <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={16} /> Watch</Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}><Share2 size={16} /></Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
