@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       url: it.url,
       seen_at: seenAt,
       image_url: it.imageUrl ?? null,
-    });
+    }).onConflictDoNothing();
     inserted++;
   }
 
