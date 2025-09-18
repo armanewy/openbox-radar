@@ -40,6 +40,19 @@ function timeAgo(iso: string) {
   return `${days}d ago`;
 }
 
+function timeAgoShort(iso: string) {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diffMs = Math.max(0, now - then);
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d`;
+}
+
 function stalenessColor(iso: string) {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins <= 15) return "bg-green-500";
@@ -50,15 +63,15 @@ function stalenessColor(iso: string) {
 function conditionShortLabel(rank: string) {
   switch ((rank || '').toLowerCase()) {
     case 'certified':
-      return 'Certified';
+      return 'Cert';
     case 'excellent':
-      return 'Excellent';
+      return 'Ex';
     case 'satisfactory':
-      return 'Satisfactory';
+      return 'Sat';
     case 'fair':
       return 'Fair';
     default:
-      return 'Unknown';
+      return 'Unk';
   }
 }
 
@@ -102,12 +115,12 @@ export default function ItemCard({ item }: { item: Item }) {
           <div className="h-[72px] w-[72px] rounded-lg bg-gray-100 border shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2 text-[11px] text-gray-500">
-            <div className="min-w-0 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+          <div className="flex items-center justify-between gap-2 text-[10px] text-gray-500">
+            <div className="min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
-              <span>last seen {timeAgo(item.seen_at)}</span>
-              <Badge className="whitespace-nowrap">{item.retailer}</Badge>
-              <Badge variant="success" className="whitespace-nowrap">{conditionShortLabel(item.condition_rank)}</Badge>
+              <span>{timeAgoShort(item.seen_at)}</span>
+              <Badge className="whitespace-nowrap px-1 py-0.5 text-[10px]">{item.retailer}</Badge>
+              <Badge variant="success" className="whitespace-nowrap px-1 py-0.5 text-[10px]">{conditionShortLabel(item.condition_rank)}</Badge>
             </div>
             <span className="shrink-0 inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
               {dollars(item.price_cents)}
