@@ -1,6 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import { getSession } from "@/lib/utils/auth";
+import AppToaster from "@/components/ui/Toaster";
 
 export const metadata = {
   title: "Open-Box Radar",
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main>
           {children}
         </main>
+        <AppToaster />
       </body>
     </html>
   );

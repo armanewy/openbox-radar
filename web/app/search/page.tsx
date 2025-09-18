@@ -1,6 +1,9 @@
 import Link from "next/link";
 import BestBuyAttribution from "@/components/BestBuyAttribution";
 import { absoluteUrl } from "@/lib/utils/url";
+import InfiniteList from "@/components/InfiniteList";
+import FilterChips from "@/components/FilterChips";
+import SortMenu from "@/components/SortMenu";
 
 type Item = {
   id: number;
@@ -81,111 +84,82 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
   return (
-    <main className="max-w-6xl mx-auto p-6 grid grid-cols-12 gap-6">
-      <aside className="col-span-12 md:col-span-3 border rounded p-4 space-y-3">
-        <form method="GET" className="space-y-3">
-          <div>
-            <label className="block text-sm text-gray-600">Search</label>
-            <input name="q" defaultValue={q} placeholder="Title or SKU" className="mt-1 w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600">Retailer</label>
-            <select name="retailer" defaultValue={retailer} className="mt-1 w-full border rounded px-3 py-2">
-              <option value="">All</option>
-              <option value="bestbuy">Best Buy</option>
-              <option value="microcenter">Micro Center</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600">SKU</label>
-            <input name="sku" defaultValue={sku} placeholder="Exact or partial" className="mt-1 w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600">Min condition</label>
-            <select name="min_condition" defaultValue={min_condition} className="mt-1 w-full border rounded px-3 py-2">
-              <option value="">Any</option>
-              <option value="certified">Certified</option>
-              <option value="excellent">Excellent</option>
-              <option value="satisfactory">Satisfactory</option>
-              <option value="fair">Fair</option>
-              <option value="unknown">Unknown</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+    <main className="container mx-auto max-w-7xl p-4 md:p-6 grid grid-cols-12 gap-6">
+      <aside className="col-span-12 md:col-span-3">
+        <div className="sticky top-3 border rounded-xl p-4 space-y-3 bg-white/70 backdrop-blur shadow-card">
+          <form method="GET" className="space-y-3">
             <div>
-              <label className="block text-sm text-gray-600">Min price (USD)</label>
-              <input name="price_min" type="number" defaultValue={price_min} className="mt-1 w-full border rounded px-3 py-2" />
+              <label className="block text-sm text-gray-600">Search</label>
+              <input name="q" defaultValue={q} placeholder="Title or SKU"
+                     className="mt-1 w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm text-gray-600">Max price (USD)</label>
-              <input name="price_max" type="number" defaultValue={price_max} className="mt-1 w-full border rounded px-3 py-2" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm text-gray-600">ZIP</label>
-              <input name="zip" defaultValue={zip} className="mt-1 w-full border rounded px-3 py-2" />
+              <label className="block text-sm text-gray-600">Retailer</label>
+              <select name="retailer" defaultValue={retailer} className="mt-1 w-full border rounded-lg px-3 py-2">
+                <option value="">All</option>
+                <option value="bestbuy">Best Buy</option>
+                <option value="microcenter">Micro Center</option>
+              </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600">Radius (mi)</label>
-              <input name="radius_miles" type="number" defaultValue={radius_miles} className="mt-1 w-full border rounded px-3 py-2" />
+              <label className="block text-sm text-gray-600">SKU</label>
+              <input name="sku" defaultValue={sku} placeholder="Exact or partial" className="mt-1 w-full border rounded-lg px-3 py-2" />
             </div>
-          </div>
-          <button className="w-full mt-2 px-4 py-2 bg-black text-white rounded">Apply</button>
-        </form>
+            <div>
+              <label className="block text-sm text-gray-600">Min condition</label>
+              <select name="min_condition" defaultValue={min_condition} className="mt-1 w-full border rounded-lg px-3 py-2">
+                <option value="">Any</option>
+                <option value="certified">Certified</option>
+                <option value="excellent">Excellent</option>
+                <option value="satisfactory">Satisfactory</option>
+                <option value="fair">Fair</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm text-gray-600">Min price (USD)</label>
+                <input name="price_min" type="number" defaultValue={price_min} className="mt-1 w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Max price (USD)</label>
+                <input name="price_max" type="number" defaultValue={price_max} className="mt-1 w-full border rounded-lg px-3 py-2" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm text-gray-600">ZIP</label>
+                <input name="zip" defaultValue={zip} className="mt-1 w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Radius (mi)</label>
+                <input name="radius_miles" type="number" defaultValue={radius_miles} className="mt-1 w-full border rounded-lg px-3 py-2" />
+              </div>
+            </div>
+            <button className="w-full mt-2 px-4 py-2 bg-black text-white rounded-lg">Apply</button>
+          </form>
+        </div>
       </aside>
 
       <section className="col-span-12 md:col-span-9">
-        <h1 className="text-xl font-semibold mb-4">Results</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-semibold">Results</h1>
+          <SortMenu />
+        </div>
+        <FilterChips />
+
         {data.items.length === 0 && (
           <p className="text-gray-600">No results yet. Try widening your search.</p>
         )}
-        <ul className="space-y-3">
-          {data.items.map((it) => (
-            <li key={`${it.retailer}-${it.store_id}-${it.id}`} className="border rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(it.seen_at)}`} />
-                  <span className="text-xs text-gray-500">last seen {timeAgo(it.seen_at)}</span>
-                </div>
-                {it.image_url ? (
-                  <a href={it.url} target="_blank" rel="noopener noreferrer" className="block mt-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.image_url} alt={it.title} className="h-24 w-auto object-contain" />
-                  </a>
-                ) : null}
-                <a href={it.url} target="_blank" rel="noopener" className="block mt-1 text-base font-medium hover:underline">
-                  {it.title}
-                </a>
-                <div className="mt-1 text-sm text-gray-600">
-                  {it.store?.name || it.store_id}
-                  {" "+(it.store?.city ? `• ${it.store.city}, ${it.store.state ?? ""}` : "")}
-                </div>
-                <div className="mt-1 text-sm text-gray-600">Condition: {it.condition_label}</div>
-              </div>
-              <div className="md:text-right">
-                <div className="text-lg font-semibold">{dollars(it.price_cents)}</div>
-                <div className="mt-2 flex gap-2 md:justify-end">
-                  <a href={it.url} target="_blank" rel="noopener noreferrer nofollow" className="px-3 py-2 border rounded">View at Retailer</a>
-                  <Link href={`/?signin=1&next=${encodeURIComponent("/search?"+buildQuery(baseParams))}`} className="px-3 py-2 bg-black text-white rounded">Watch this</Link>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+
+        <InfiniteList
+          fetchUrl={absoluteUrl('/api/inventory/search')}
+          baseParams={baseParams}
+          initialItems={data.items}
+          initialNextCursor={data.nextCursor}
+        />
 
         {hasBestBuy ? <BestBuyAttribution /> : null}
-
-        {data.nextCursor && (
-          <div className="mt-6">
-            <Link
-              className="px-4 py-2 border rounded"
-              href={`/search?${buildQuery({ ...baseParams, cursor: data.nextCursor })}`}
-            >
-              Next page →
-            </Link>
-          </div>
-        )}
       </section>
     </main>
   );
