@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { ExternalLink, Heart, Share2 } from "lucide-react";
+import WatchSheet from "@/components/watch/WatchSheet";
 
 export type Item = {
   id: number;
@@ -48,6 +49,7 @@ export default function ItemCard({ item }: { item: Item }) {
       await navigator.clipboard.writeText(item.url);
     } catch {}
   }, [item.url]);
+  const [open, setOpen] = useState(false);
 
   return (
     <li className="rounded-xl border shadow-card p-4 bg-white/60 backdrop-blur">
@@ -90,19 +92,23 @@ export default function ItemCard({ item }: { item: Item }) {
             >
               <ExternalLink size={16} /> View
             </a>
-            {/* For now, link to wizard; optimistic add can be wired later */}
-            <Link
-              href={`/app/watches/new?retailer=${encodeURIComponent(item.retailer)}${item.sku ? `&sku=${encodeURIComponent(item.sku)}` : ''}`}
+            <button
+              onClick={() => setOpen(true)}
               className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-black text-white hover:opacity-90"
             >
               <Heart size={16} /> Watch
-            </Link>
+            </button>
             <button onClick={copy} className="inline-flex items-center gap-1 px-2.5 py-2 border rounded-lg hover:bg-gray-50">
               <Share2 size={16} />
             </button>
           </div>
         </div>
       </div>
+      <WatchSheet
+        open={open}
+        onOpenChange={setOpen}
+        defaults={{ retailer: item.retailer as any, sku: item.sku ?? undefined }}
+      />
     </li>
   );
 }

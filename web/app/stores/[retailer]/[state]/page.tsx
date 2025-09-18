@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StoreRow from "@/components/stores/StoreRow";
 import { db } from "@/lib/drizzle/db";
 import { stores } from "@/lib/drizzle/schema";
 import { and, eq } from "drizzle-orm";
@@ -28,15 +29,7 @@ export default async function RetailerStateStores({ params }: { params: { retail
       ) : (
         <ul className="divide-y border rounded">
           {rows.map((s) => (
-            <li key={s.store_id} className="p-4 flex items-center justify-between gap-3">
-              <div>
-                <div className="font-medium">{s.name}</div>
-                <div className="text-sm text-gray-600">{s.city || ""} {s.zipcode ? `• ${s.zipcode}` : ""}</div>
-              </div>
-              <Link className="px-3 py-2 border rounded" href={`/search?retailer=${encodeURIComponent(retailer)}&store_id=${encodeURIComponent(s.store_id)}`}>
-                Browse inventory
-              </Link>
-            </li>
+            <StoreRow key={s.store_id} retailer={retailer as any} store={s} />
           ))}
         </ul>
       )}
@@ -44,4 +37,3 @@ export default async function RetailerStateStores({ params }: { params: { retail
     </main>
   );
 }
-

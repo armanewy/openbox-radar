@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/drizzle/db";
 import { inventory, stores } from "@/lib/drizzle/schema";
-import { and, desc, eq, ilike, inArray, lte, gte, or, lt } from "drizzle-orm";
+import { and, desc, asc, eq, ilike, inArray, lte, gte, or, lt } from "drizzle-orm";
 
 type Cursor = { seenAt: string; id: number };
 
@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
   const radiusMiles = url.searchParams.get("radius_miles");
   const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") ?? 50)));
   const cursor = parseCursor(url.searchParams.get("cursor"));
+  const sort = url.searchParams.get("sort") || "relevance";
 
   const whereClauses = [
     retailer ? eq(inventory.retailer, retailer as any) : undefined,
@@ -72,6 +73,13 @@ export async function GET(req: NextRequest) {
   // NOTE on geo filter: requires ZIP->lat/lng lookup not present yet.
   // We still join stores to enrich results and enable client-side distance if desired.
   // TODO: once a ZIP geocoder table is added, compute distance and filter by radius.
+  // sorting
+  let order = [desc(inventory.seen_at), desc(inventory.id)];
+  if (sort === "price_asc") order = [asc(inventory.price_cents), desc(inventory.seen_at), desc(inventory.id)];
+  else if (sort === "price_desc") order = [desc(inventory.price_cents), desc(inventory.seen_at), desc(inventory.id)];
+  else if (sort === "newest") order = [desc(inventory.seen_at), desc(inventory.id)];
+  // discount_desc requires MSRP/baseline; fallback to relevance until data is available
+
   const rows = await db
     .select({
       id: inventory.id,
@@ -96,7 +104,7 @@ export async function GET(req: NextRequest) {
       and(eq(inventory.retailer, stores.retailer), eq(inventory.store_id, stores.store_id))
     )
     .where(whereClauses.length ? and(...whereClauses) : undefined)
-    .orderBy(desc(inventory.seen_at), desc(inventory.id))
+    .orderBy(...order)
     .limit(limit + 1);
 
   let nextCursor: string | null = null;
