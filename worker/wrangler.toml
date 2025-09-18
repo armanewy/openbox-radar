@@ -9,14 +9,14 @@ crons = ["*/10 * * * *"]
 CRON_SHARED_SECRET = "JB0uSHbUchIJ8iYpWKPQTk3Lqzcl332o4HWZNNKgKbzoXlS4dvy6bgZd+3bRymU4"
 INGEST_URL = "http://localhost:3001/api/ingest"
 USE_REAL_MICROCENTER = "1"
-USE_REAL_BESTBUY = "0"
+USE_REAL_BESTBUY = "1"
 # Provide one of the following when USE_REAL_BESTBUY=1
 # BESTBUY_SKUS can be a comma-separated list like: 1234567,7654321
 BESTBUY_SKUS = ""
 # Or use a category id like abcat0502000 (e.g., Laptops)
-BESTBUY_CATEGORY = ""
+BESTBUY_CATEGORY = "abcat0502000"
 # Optional page size for category queries
-BESTBUY_PAGE_SIZE = "50"
+BESTBUY_PAGE_SIZE = "30"
 
 # Set your key via env/secret in real deployments. Do not commit secrets.
-BESTBUY_API_KEY = ""
+BESTBUY_API_KEY = "xg9RgsndaC0LkUz0XeqgtqYt"

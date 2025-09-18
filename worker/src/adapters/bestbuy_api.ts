@@ -10,6 +10,7 @@ export type BbyItem = {
   priceCents: number;
   url: string; // product web link
   seenAt: string;
+  imageUrl?: string;
 };
 
 type OpenBoxOffer = {
@@ -55,6 +56,7 @@ function mapToItem(p: OpenBoxResult): BbyItem | null {
     priceCents: Math.round(current * 100),
     url,
     seenAt: new Date().toISOString(),
+    imageUrl: p.images?.standard,
   };
 }
 
@@ -85,4 +87,3 @@ export async function fetchBestBuyOpenBoxByCategory(apiKey: string, categoryId: 
   const items = results.map(mapToItem).filter(Boolean) as BbyItem[];
   return { storeId: 'bby-online', items };
 }
-

@@ -13,6 +13,7 @@ const Item = z.object({
   priceCents: z.number().int().positive(),
   url: z.string().url(),
   seenAt: z.string().datetime().optional(),
+  imageUrl: z.string().url().optional(),
 });
 
 const Payload = z.object({ items: z.array(Item).max(1000) });
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
       price_cents: it.priceCents,
       url: it.url,
       seen_at: seenAt,
+      image_url: it.imageUrl ?? null,
     });
     inserted++;
   }

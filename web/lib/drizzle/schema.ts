@@ -70,6 +70,7 @@ export const inventory = pgTable('inventory', {
   price_cents: integer('price_cents').notNull(),
   url: text('url').notNull(),
   seen_at: timestamp('seen_at', { withTimezone: true }).notNull(),
+  image_url: text('image_url'),
   // Best Buy TTL fields
   source: text('source').notNull().default('microcenter'),
   fetched_at: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),

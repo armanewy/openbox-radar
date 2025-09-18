@@ -12,6 +12,7 @@ type Item = {
   condition_rank: string;
   price_cents: number;
   url: string;
+  image_url: string | null;
   seen_at: string;
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
@@ -147,6 +148,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
                   <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(it.seen_at)}`} />
                   <span className="text-xs text-gray-500">last seen {timeAgo(it.seen_at)}</span>
                 </div>
+                {it.image_url ? (
+                  <a href={it.url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={it.image_url} alt={it.title} className="h-24 w-auto object-contain" />
+                  </a>
+                ) : null}
                 <a href={it.url} target="_blank" rel="noopener" className="block mt-1 text-base font-medium hover:underline">
                   {it.title}
                 </a>

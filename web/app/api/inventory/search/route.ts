@@ -83,6 +83,7 @@ export async function GET(req: NextRequest) {
       condition_rank: inventory.condition_rank,
       price_cents: inventory.price_cents,
       url: inventory.url,
+      image_url: inventory.image_url,
       seen_at: inventory.seen_at,
       store_name: stores.name,
       store_city: stores.city,
@@ -121,6 +122,7 @@ export async function GET(req: NextRequest) {
       price_cents: r.price_cents,
       url: r.url,
       seen_at: r.seen_at,
+      image_url: r.image_url,
       store: {
         name: r.store_name,
         city: r.store_city,
