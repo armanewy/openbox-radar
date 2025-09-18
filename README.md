@@ -12,6 +12,10 @@ Next.js web app + Cloudflare Worker that collects open-box deals, normalizes the
 - `db/` — SQL indexes and notes
 - `.env.example` — env var checklist
 
+See also:
+- WORKER.md — Worker-specific setup, adapters, secrets, and deploy
+- WEB.md — Web app APIs, schema/migrations, env, and runbook
+
 ## Quick Start (Dev)
 1) Prereqs
 - Node 20+, pnpm (or npm), Wrangler CLI
