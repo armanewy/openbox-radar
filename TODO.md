@@ -34,7 +34,7 @@
       ADD COLUMN IF NOT EXISTS lng double precision;
     CREATE INDEX IF NOT EXISTS idx_stores_lat_lng ON public.stores (lat, lng);
     ```
-* [ ] Backfill (manual or script) for Micro Center + BB store coords (can be incremental).
+* [x] Backfill (manual or script) for Micro Center + BB store coords (can be incremental).
 
 ### API
 

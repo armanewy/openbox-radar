@@ -200,7 +200,7 @@ Web (Vercel)
 - Optionally set `SUPABASE_CA_B64` for strict TLS
 
 Worker (Cloudflare)
-- `worker/wrangler.toml` — name, triggers, vars
+- `worker/wrangler.toml` — name, triggers (every 5 min), vars
 - Set secrets via Wrangler:
 ```bash
 cd worker
@@ -208,6 +208,14 @@ wrangler secret put CRON_SHARED_SECRET
 wrangler secret put BESTBUY_API_KEY
 ```
 - Set `INGEST_URL=https://<your-web-domain>/api/ingest`
+
+Store coordinates backfill
+- Optional helper to fill `stores.lat/lng` from ZIP centroids (US):
+```bash
+cd web
+pnpm backfill:coords
+```
+This uses the free Zippopotam.us API; ensure your DB contains `zipcode` values for stores.
 
 ## Runbook
 
