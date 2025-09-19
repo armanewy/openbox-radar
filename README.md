@@ -5,8 +5,8 @@ Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑bo
 ## Repo layout
 - `web/` — Next.js app (app router)
   - Drizzle ORM + Postgres (Supabase‑friendly)
-  - API routes: `ingest`, `inventory/search`, `inventory/history`, `inventory/trending`, `watches`, `auth/*`, `analytics`
-  - UI: search with sticky filters, Sort (Dropdown), Save search, infinite scroll, trending + drops carousels
+  - API routes: `ingest`, `inventory/search`, `inventory/history`, `inventory/trending`, `watches`, `alerts/*`, `auth/*`, `analytics`, `deal-votes`
+  - UI: landing hero with Hot Now + Near You, search with sticky filters, Sort (Dropdown incl. Upvoted), Save search, infinite scroll, trending + drops, price history drawer
 - `worker/` — Cloudflare Worker
   - Schedules pulls from Best Buy (API) and Micro Center (DOM, optional)
   - POSTs normalized items to `web` `/api/ingest`
@@ -145,7 +145,7 @@ Web endpoint: `POST /api/ingest`
 
 Worker sender
 - `worker/src/scheduler.ts` batches items and POSTs to `INGEST_URL` with bearer `CRON_SHARED_SECRET`.
-- Returns `{ ok, ingested, status }` or a JSON error on failure.
+- Returns `{ ok, ingested, status, flags, sources }` or a JSON error on failure.
 
 ## Retailer adapters
 
@@ -167,13 +167,13 @@ Web-side Best Buy (optional)
 ## Cron jobs
 
 Worker cron
-- `worker/src/index.ts` exposes `/cron` (requires `x-cron-secret`) and scheduled triggers via Wrangler.
-- Scheduler (`worker/src/scheduler.ts`) picks Micro Center / Best Buy real adapters or stubs based on flags.
+- `worker/src/index.ts` exposes `/cron` (requires `x-cron-secret`) and scheduled triggers via Wrangler (every 5 min).
+- Scheduler (`worker/src/scheduler.ts`) picks adapters based on flags; dev stubs are disabled by default (`ALLOW_DEV_STUBS=0`).
 
 Web cron
 - `web/app/api/cron/route.ts`
   - Purges expired Best Buy rows: `source='bestbuy' AND expires_at < now()`
-  - Iterates watches and inserts dev items (placeholder)
+  - DEV insert is gated behind `ENABLE_DEV_CRON=1` (off in prod)
   - If `BESTBUY_ENABLED=1`, ingests watched Best Buy SKUs via web-side adapter
 
 ## Search API & UI
@@ -184,14 +184,16 @@ Search API: `GET /api/inventory/search`
 - Joins `stores` to enrich display fields
 - Includes `image_url` in results
 - When `zip` and `radius_miles` are provided, results are filtered by distance from the ZIP centroid to store coordinates. Unknown store coordinates are excluded. Response items include `distance_miles`.
+- Optional sort: `upvoted` (24h window) using `/api/deal-votes` counts.
 
 UI highlights
-- Sticky desktop filters + mobile Drawer; Filter chips; Sort (Dropdown)
+- Landing: hero with value prop + Hot Now (radar sweep animation and drops list) + Near You (ZIP + radius; persisted in localStorage)
+- Sticky desktop filters + mobile Drawer; Filter chips; Sort (Dropdown incl. Upvoted)
 - Save search (opens Watch drawer)
-- Infinite scroll + “Load more” fallback; skeletons
-- Cards: thumbnails (Next/Image), inline price badge, compact badges, sparkline (under image)
+- Infinite scroll + “Load more” fallback; live result count
+- Cards: thumbnails (Next/Image), inline price badge, compact badges, sparkline (under image); click sparkline → price history drawer
 - “Watch” opens a drawer; anonymous users can enter email to receive a magic link
-- Map view (MVP): `/search/map` groups results by store with distance labels
+- Map view (MVP): `/search/map` groups results by store with distance labels (Best Buy is online‑only → shows as `bby‑online`)
 
 ## Deployment
 
@@ -262,7 +264,8 @@ TLS & Drizzle CLI
 
 ## Notes & limitations
 - Best Buy Open Box API doesn’t expose store-level stock; items represent available open-box offers. Links expire after ~7 days; TTL is enforced (71h).
-- Geo filtering uses ZIP centroids and store coordinates when available; stores lacking coordinates are excluded when a radius filter is active. For best results, backfill `stores.lat/lng`.
+- Geo filtering uses ZIP centroids and store coordinates when available; stores lacking coordinates are excluded when a radius filter is active. For best results, backfill `stores.lat/lng` (script provided).
+- `/api/ingest` drops obvious dev/stub items in production (e.g., titles starting with “DEV”, example.com URLs, known stub storeIds) as a safeguard.
 - Alerts/auth are minimal; extend as needed.
 
 ## Business logic & product behavior

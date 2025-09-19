@@ -250,8 +250,8 @@
 
 ### UI
 
-* [ ] On `ItemCard`, add 👍 button; store `voter_hash` in cookie (uuid).
-* [ ] Sort option: “Most upvoted (24h)”.
+* [x] On `ItemCard`, add 👍 button; store `voter_hash` in cookie (uuid).
+* [x] Sort option: “Most upvoted (24h)”.
 
 **Acceptance**
 
@@ -264,7 +264,7 @@
 * [ ] Add `users.plan` column (enum: `free|pro`) and a `max_watches` computed setting in web.
 
   * `web/lib/drizzle/migrations/0027_users_plan.sql`
-* [ ] Gate: free = 3 watches, pro = 50 (just enforce in API; UI shows hint).
+* [x] Gate: free = 3 watches (env `FREE_WATCH_LIMIT`, API enforced). Pro tier not wired yet.
 * [x] Add placeholders for Stripe keys in `web/.env.example` for later.
 
 **Acceptance**
