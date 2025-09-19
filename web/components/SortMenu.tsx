@@ -8,6 +8,7 @@ const baseOptions = [
   { value: "price_asc", label: "Price ↑" },
   { value: "price_desc", label: "Price ↓" },
   { value: "newest", label: "Newest" },
+  { value: "upvoted", label: "Most upvoted (24h)" },
 ];
 
 export default function SortMenu() {

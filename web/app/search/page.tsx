@@ -86,20 +86,21 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
 
   const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
+  const initialCount = data.items.length;
   return (
     <main className="container mx-auto max-w-7xl p-4 md:p-6 grid grid-cols-12 gap-6">
       <aside className="col-span-12 md:col-span-3">
         <FilterDrawer>
           <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
         </FilterDrawer>
-        <div className="hidden md:block sticky top-3 border rounded-xl p-4 space-y-3 bg-white/70 backdrop-blur shadow-card">
+        <div className="hidden md:block sticky top-3 border border-gray-300 rounded-xl p-4 space-y-3 bg-white shadow">
           <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
         </div>
       </aside>
 
       <section className="col-span-12 md:col-span-9">
         <div className="flex items-center justify-between mb-3 gap-3">
-          <h1 className="text-xl font-semibold">Results</h1>
+          <h1 className="text-xl font-semibold">Results ({initialCount}{data.nextCursor ? '+' : ''})</h1>
           <div className="flex items-center gap-2">
             <SortMenu />
             <SaveSearchButton params={{

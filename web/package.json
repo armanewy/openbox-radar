@@ -7,7 +7,8 @@
     "start": "next start",
     "lint": "next lint",
     "drizzle:push": "drizzle-kit push",
-    "drizzle:studio": "drizzle-kit studio"
+    "drizzle:studio": "drizzle-kit studio",
+    "backfill:coords": "tsx scripts/backfill-store-coords.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",

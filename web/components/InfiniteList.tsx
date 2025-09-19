@@ -47,6 +47,7 @@ export default function InfiniteList({ fetchUrl, baseParams, initialItems, initi
 
   return (
     <div>
+      <div className="mb-2 text-sm text-gray-600">Showing {items.length}{cursor ? '+' : ''} results</div>
       <ul className="space-y-3">
         {items.map((it) => (
           <ItemCard key={`${it.retailer}-${it.store_id}-${it.id}`} item={it} />
@@ -67,4 +68,3 @@ export default function InfiniteList({ fetchUrl, baseParams, initialItems, initi
     </div>
   );
 }
-

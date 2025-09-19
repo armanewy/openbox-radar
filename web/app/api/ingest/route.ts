@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle/db';
-import { inventory } from '@/lib/drizzle/schema';
+import { inventory, price_history } from '@/lib/drizzle/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -40,7 +40,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const items = parsed.data.items;
+  // In production, defensively drop any obvious dev/stub items to avoid polluting prod data
+  const isProd = process.env.NODE_ENV === 'production';
+  const isDevLike = (it: z.infer<typeof Item>) => {
+    const titleLooksDev = /^\s*DEV\b/i.test(it.title);
+    const urlLooksDev = /example\.com/i.test(it.url);
+    const devStores = new Set(['bby-123', 'mc-cambridge']);
+    const storeLooksDev = devStores.has(it.storeId);
+    return titleLooksDev || urlLooksDev || storeLooksDev;
+  };
+
+  const rawItems = parsed.data.items;
+  const items = isProd ? rawItems.filter((it) => !isDevLike(it)) : rawItems;
+  const dropped = rawItems.length - items.length;
   if (items.length === 0) return NextResponse.json({ ok: true, inserted: 0 });
 
   const dedupeMinutes = Number(process.env.INGEST_DEDUPE_MIN || 60);
@@ -77,8 +89,21 @@ export async function POST(req: NextRequest) {
       seen_at: seenAt,
       image_url: it.imageUrl ?? null,
     }).onConflictDoNothing();
+    // Append to price history (best effort)
+    try {
+      await db.insert(price_history).values({
+        retailer: it.retailer,
+        store_id: it.storeId,
+        sku: it.sku ?? null,
+        url: it.url,
+        price_cents: it.priceCents,
+        seen_at: seenAt,
+      });
+    } catch {
+      // If table missing, ignore
+    }
     inserted++;
   }
 
-  return NextResponse.json({ ok: true, inserted });
+  return NextResponse.json({ ok: true, inserted, dropped });
 }

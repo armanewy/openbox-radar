@@ -4,8 +4,8 @@
 
 ## 0) Prep / conventions
 
-* [ ] Create branch: `feat/geo-alerts-history-ui`
-* [ ] Add env placeholders in `web/.env.example` and `worker/wrangler.toml` as noted below.
+* [x] Create branch: `feat/geo-alerts-history-ui`
+* [x] Add env placeholders in `web/.env.example` and `worker/wrangler.toml` as noted below.
 * [ ] Enable pg\_trgm + confirm existing indexes (you already have them).
 
 ---
@@ -14,17 +14,17 @@
 
 ### Data & utils
 
-* [ ] **Add ZIP→lat/lng**: `web/lib/geo/zipdb.ts`
+* [x] **Add ZIP→lat/lng**: `web/lib/geo/zipdb.ts`
 
   * Accept a minimal embedded CSV (US only for now) or wire up to a table later.
   * Export: `lookupZip(zip: string): { lat: number; lng: number } | null`
-* [ ] **Haversine util**: `web/lib/geo/distance.ts`
+* [x] **Haversine util**: `web/lib/geo/distance.ts`
 
   * `export function milesBetween(a:{lat:number,lng:number}, b:{lat:number,lng:number}): number`
 
 ### DB (stores need coords)
 
-* [ ] **Add columns** to `stores`:
+* [x] **Add columns** to `stores`:
 
   * Migration file: `web/lib/drizzle/migrations/0023_stores_lat_lng.sql`
 
@@ -34,22 +34,22 @@
       ADD COLUMN IF NOT EXISTS lng double precision;
     CREATE INDEX IF NOT EXISTS idx_stores_lat_lng ON public.stores (lat, lng);
     ```
-* [ ] Backfill (manual or script) for Micro Center + BB store coords (can be incremental).
+* [x] Backfill (manual or script) for Micro Center + BB store coords (can be incremental).
 
 ### API
 
-* [ ] Extend search handler `web/app/api/inventory/search/route.ts`
+* [x] Extend search handler `web/app/api/inventory/search/route.ts`
 
   * New query params: `zip`, `radius_miles`
   * Flow: if both present → lookup ZIP → fetch candidate stores by retailer (or all) → compute distance in app layer → filter results post-query or join stores and filter by a rough bounding box (±radius/69 deg) then refine in Node.
 
 ### UI
 
-* [ ] Add ZIP & Radius inputs:
+* [x] Add ZIP & Radius inputs:
 
   * `web/app/search/_components/FilterDrawer.tsx` → add fields `zip`, `radius`
   * Display active chip in filter bar
-* [ ] Map view (MVP):
+* [x] Map view (MVP):
 
   * New route: `web/app/search/map/page.tsx`
   * Use `<MapboxGL/>` later; for now a simple leaf cluster component or even a list grouped by store distance.
@@ -65,7 +65,7 @@
 
 ### DB
 
-* [ ] New table `price_history`:
+* [x] New table `price_history`:
 
   * `web/lib/drizzle/migrations/0024_price_history.sql`
 
@@ -81,13 +81,13 @@
     );
     CREATE INDEX IF NOT EXISTS idx_ph_compound ON public.price_history (retailer, store_id, COALESCE(sku, url), seen_at DESC);
     ```
-* [ ] **Web ingest** (`web/app/api/ingest/route.ts`):
+* [x] **Web ingest** (`web/app/api/ingest/route.ts`):
 
   * After dedupe/insert to `inventory`, also `INSERT` into `price_history` (always append).
 
 ### API
 
-* [ ] New endpoint: `GET /api/inventory/history`
+* [x] New endpoint: `GET /api/inventory/history`
 
   * `web/app/api/inventory/history/route.ts`
   * Params: `retailer`, `store_id`, `sku | url`, `limit`
@@ -95,7 +95,7 @@
 
 ### UI
 
-* [ ] **ItemCard sparkline** already exists—augment:
+* [x] **ItemCard sparkline** already exists—augment:
 
   * Click → open Drawer with full **Price History** chart
   * New comp: `web/components/PriceHistoryChart.tsx` (fetches `/api/inventory/history`)
@@ -137,7 +137,7 @@
 
 ### Worker
 
-* [ ] **Matcher**: `worker/src/alerts/matcher.ts`
+* [x] **Matcher**: `worker/src/alerts/matcher.ts`
 
   * Load all `watches` (paged)
   * For each, query recent inventory snapshots that satisfy:
@@ -148,12 +148,12 @@
   * Deduplicate by `(watch_id, inventory_id)` via `alert_events` insert-on-conflict
   * Return list of `{ watchId, email, matches[] }`
 
-* [ ] **Sender**: `worker/src/alerts/sender.ts`
+* [x] **Sender**: `worker/src/alerts/sender.ts`
 
   * For now email only (Resend key you already support)—batch per watch
   * Env: `RESEND_API_KEY` (already in web; mirror in worker or call a web endpoint to send)
 
-* [ ] **Scheduler**: `worker/src/index.ts`
+* [x] **Scheduler**: `worker/src/index.ts`
 
   * Add `/alerts` route requiring `x-cron-secret`
   * CRON trigger every 5–10 min in prod
@@ -175,12 +175,12 @@
 
 ### Landing page
 
-* [ ] Replace clutter with 3 blocks:
+* [x] Replace clutter with 3 blocks:
 
   * Big search bar
   * **“Hot Now”** (Top drops past 24h) → query `/api/inventory/trending?window=24h&sort=drop_pct`
   * **“Near You”** (if user provides ZIP once, store in localStorage)
-* [ ] Files:
+* [x] Files:
 
   * `web/app/(marketing)/page.tsx` → simplify to hero + two sections
   * New comp: `web/components/RadarSweep.tsx` (simple CSS animation with pulsing “blips” from top 10 drops)
@@ -197,7 +197,7 @@
 
 ### Worker
 
-* [ ] Introduce common interface: `worker/src/adapters/types.ts`
+* [x] Introduce common interface: `worker/src/adapters/types.ts`
 
   ```ts
   export type NormalizedItem = {
@@ -217,11 +217,11 @@
   }
   ```
 * [ ] Refactor BB + MC adapters to implement it.
-* [ ] Add **Newegg clearance scaffold**:
+* [x] Add **Newegg clearance scaffold**:
 
   * `worker/src/adapters/newegg_clearance.ts` (DOM scrape stub returning empty in dev)
   * Flag: `USE_REAL_NEWEGG`
-* [ ] Update scheduler `worker/src/scheduler.ts` to loop adapters by flags.
+* [x] Update scheduler `worker/src/scheduler.ts` to loop adapters by flags.
 
 **Acceptance**
 
@@ -265,7 +265,7 @@
 
   * `web/lib/drizzle/migrations/0027_users_plan.sql`
 * [ ] Gate: free = 3 watches, pro = 50 (just enforce in API; UI shows hint).
-* [ ] Add placeholders for Stripe keys in `web/.env.example` for later.
+* [x] Add placeholders for Stripe keys in `web/.env.example` for later.
 
 **Acceptance**
 
@@ -275,8 +275,8 @@
 
 ## 8) Observability & guardrails
 
-* [ ] Add **structured logs** in worker (`/alerts`, `/cron`) with counts & latency.
-* [ ] Add **/api/health** in web returning DB, migrations, and last-cron times.
+* [x] Add **structured logs** in worker (`/alerts`, `/cron`) with counts & latency.
+* [x] Add **/api/health** in web returning DB, migrations, and last-cron times.
 
   * `web/app/api/health/route.ts`
 

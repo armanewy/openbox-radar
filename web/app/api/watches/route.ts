@@ -72,6 +72,18 @@ export async function POST(req: NextRequest) {
     }
     userId = user.id;
   }
+  // Enforce free plan watch limits (no payments yet)
+  try {
+    const FREE_LIMIT = Number(process.env.FREE_WATCH_LIMIT || 3);
+    // Count active watches for this user
+    const cnt = await db
+      .select({ c: watches.id })
+      .from(watches)
+      .where(eq(watches.user_id, userId!));
+    if (cnt.length >= FREE_LIMIT) {
+      return NextResponse.json({ error: 'limit_reached', max: FREE_LIMIT }, { status: 403 });
+    }
+  } catch {}
   // If url provided but no sku, try parsing to infer sku
   let sku = parsed.data.sku ?? undefined;
   if (!sku && parsed.data.product_url) {

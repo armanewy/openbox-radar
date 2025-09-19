@@ -1,16 +1,19 @@
 import { fetchBestBuyStore, fetchMicroCenterStore } from "./adapters/stubs";
 import { fetchMicroCenterOpenBoxDOM } from "./adapters/microcenter_dom";
 import { fetchBestBuyOpenBoxBySkus, fetchBestBuyOpenBoxByCategory } from "./adapters/bestbuy_api";
+import { fetchNeweggClearance } from "./adapters/newegg_clearance";
 
 export const Scheduler = {
   async run(env: any) {
-    // TODO: query active watches/store list via Supabase REST or KV; for now, static examples
+    // Flags
     const useRealMC = env.USE_REAL_MICROCENTER === '1';
     const useRealBBY = env.USE_REAL_BESTBUY === '1';
+    const allowDevStubs = env.ALLOW_DEV_STUBS === '1';
 
+    // Micro Center
     const mcPromise = useRealMC
       ? fetchMicroCenterOpenBoxDOM('mc-cambridge')
-      : fetchMicroCenterStore('mc-cambridge');
+      : (allowDevStubs ? fetchMicroCenterStore('mc-cambridge') : Promise.resolve({ storeId: 'mc-disabled', items: [] as any[] }));
 
     let bbyPromise: Promise<{ storeId: string; items: any[] }>;
     if (useRealBBY) {
@@ -29,13 +32,19 @@ export const Scheduler = {
         bbyPromise = Promise.resolve({ storeId: 'bby-online', items: [] });
       }
     } else {
-      bbyPromise = fetchBestBuyStore('bby-123');
+      bbyPromise = allowDevStubs ? fetchBestBuyStore('bby-123') : Promise.resolve({ storeId: 'bby-disabled', items: [] });
     }
 
-    const batches = await Promise.all([bbyPromise, mcPromise]);
+    const useRealNE = env.USE_REAL_NEWEGG === '1';
+    const nePromise = fetchNeweggClearance(useRealNE);
+
+    const batches = await Promise.all([bbyPromise, mcPromise, nePromise]);
 
     const items = batches.flatMap((b) => b.items);
-    if (items.length === 0) return { ok: true, ingested: 0 };
+    const sources = batches.map((b) => ({ storeId: (b as any)?.storeId || 'unknown', count: b.items?.length ?? 0 }));
+    console.log('[scheduler] flags:', { useRealBBY, useRealMC, allowDevStubs });
+    console.log('[scheduler] adapter batches:', sources.map((s) => `${s.storeId}:${s.count}`).join(', '));
+    if (items.length === 0) return { ok: true, ingested: 0, flags: { useRealBBY, useRealMC, allowDevStubs }, sources } as any;
 
     const ingestUrl: string = env.INGEST_URL || '';
     if (!ingestUrl) return { ok: false, error: 'INGEST_URL not set', ingested: 0 };
@@ -51,9 +60,9 @@ export const Scheduler = {
       });
 
       const json = await r.json().catch(() => ({}));
-      return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0 };
+      return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0, flags: { useRealBBY, useRealMC, allowDevStubs }, sources } as any;
     } catch (e: any) {
-      return { ok: false, error: e?.message || String(e), step: 'ingest', ingestUrl };
+      return { ok: false, error: e?.message || String(e), step: 'ingest', ingestUrl, flags: { useRealBBY, useRealMC, allowDevStubs }, sources } as any;
     }
   }
 }

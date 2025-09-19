@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const s = getSession();
   return (
     <html lang="en">
-      <body>
+      <body className="bg-gradient-to-b from-white to-gray-50 text-gray-800">
         <header className="border-b bg-white/80 backdrop-blur">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">

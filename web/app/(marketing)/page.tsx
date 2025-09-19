@@ -1,85 +1,52 @@
-"use client";
-import { useEffect, useState } from "react";
 import SearchHero from "@/components/SearchHero";
-import Carousel from "@/components/Carousel";
-import BestBuyAttribution from "@/components/BestBuyAttribution";
-import HowItWorks from "@/components/HowItWorks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import RadarSweep from "@/components/RadarSweep";
+import NearYou from "@/components/NearYou";
+import { absoluteUrl } from "@/lib/utils/url";
+import Link from "next/link";
 
-export default function Page() {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-  const [err, setErr] = useState("");
-  const [nextParam, setNextParam] = useState<string | null>(null);
-  const [trending, setTrending] = useState<Array<any>>([]);
+type Item = { id: number; title: string; price_cents: number; url: string };
+function dollars(n: number) { return `$${(n/100).toFixed(2)}`; }
 
-  async function sendLink(e: React.FormEvent) {
-    e.preventDefault();
-    setErr("");
-    const r = await fetch("/api/auth/magic-link", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, next: nextParam ?? undefined }),
-    });
-    if (r.ok) setSent(true);
-    else setErr("Could not send link. Try again.");
-  }
+async function fetchDrops(): Promise<Item[]> {
+  const res = await fetch(absoluteUrl('/api/inventory/trending?type=drops&limit=8'), { cache: 'no-store', next: { revalidate: 0 } });
+  const json = await res.json();
+  return (json.items || []) as Item[];
+}
 
-  // capture ?next= for magic link flow
-  if (typeof window !== 'undefined' && nextParam === null) {
-    const u = new URL(window.location.href);
-    const n = u.searchParams.get('next');
-    if (n) setNextParam(n);
-  }
-
-  useEffect(() => {
-    fetch('/api/inventory/trending?limit=8&type=recent')
-      .then((r) => r.json())
-      .then((d) => setTrending(d.items || []))
-      .catch(() => {});
-  }, []);
-  const [drops, setDrops] = useState<Array<any>>([]);
-  useEffect(() => {
-    fetch('/api/inventory/trending?limit=8&type=drops')
-      .then((r) => r.json())
-      .then((d) => setDrops(d.items || []))
-      .catch(() => {});
-  }, []);
-
+export default async function Page() {
+  const drops = await fetchDrops();
   return (
     <main className="container mx-auto max-w-7xl p-6 space-y-10">
-      <SearchHero />
-      <HowItWorks />
-
-      <form onSubmit={sendLink} className="mt-2 flex gap-2 max-w-xl">
-        <Input type="email" required placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10" />
-        <Button variant="brand" className="h-10">Send sign-in link</Button>
-      </form>
-
-      {sent && <p className="mt-3 text-green-700">Check your email for the sign-in link.</p>}
-      {err && <p className="mt-3 text-red-600">{err}</p>}
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Trending now</h2>
-        {trending.length === 0 ? (
-          <p className="text-gray-600">No items yet — try adding a watch and running cron.</p>
-        ) : (
-          <Carousel items={trending} />
-        )}
-        {trending.some((it: any) => it.retailer === 'bestbuy') ? <BestBuyAttribution /> : null}
+      <section>
+        <SearchHero subtitle="Real-time open-box deals with local alerts & price history." />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Biggest recent drops</h2>
-        {drops.length === 0 ? (
-          <p className="text-gray-600">Price drop data appears once multiple snapshots exist.</p>
-        ) : (
-          <Carousel items={drops} />
-        )}
+      <section className="grid md:grid-cols-2 gap-6">
+        <div className="rounded-xl border border-gray-300 p-4 bg-white shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">Hot Now</h2>
+            <Link href="/search" className="text-sm underline">Browse all</Link>
+          </div>
+          <RadarSweep blips={(drops || []).map((d, i) => ({ id: String(d.id), x: (i*13)%90 + 5, y: (i*23)%80 + 10 }))} />
+          <ul className="mt-3 space-y-2">
+            {drops.length === 0 ? <li className="text-sm text-gray-600">No price drops detected.</li> : null}
+            {drops.map((it) => (
+              <li key={it.id} className="text-sm truncate">
+                <a className="underline" href={it.url} target="_blank" rel="noopener noreferrer">{it.title}</a>
+                <span className="ml-2 font-medium">{dollars(it.price_cents)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-gray-300 p-4 bg-white shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">Near You</h2>
+            <Link href="/search/map" className="text-sm underline">Map</Link>
+          </div>
+          <p className="text-sm text-gray-600 mb-3">Save a ZIP once; we’ll use it for local search and alerts.</p>
+          <NearYou />
+        </div>
       </section>
-
-      <a href="/app" className="inline-block mt-2 underline">Go to app</a>
     </main>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { ExternalLink, Heart, Share2 } from "lucide-react";
+import { ExternalLink, Heart, Share2, ThumbsUp } from "lucide-react";
 import WatchSheet from "@/components/watch/WatchSheet";
 import PriceSparkline from "@/components/cards/PriceSparkline";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
+import { Drawer, DrawerContent, DrawerHeader, DrawerClose } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +24,7 @@ export type Item = {
   url: string;
   image_url: string | null;
   seen_at: string;
+  distance_miles?: number | null;
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
 
@@ -84,10 +87,22 @@ export default function ItemCard({ item }: { item: Item }) {
     } catch {}
   }, [item.url]);
   const [open, setOpen] = useState(false);
+  const [openHistory, setOpenHistory] = useState(false);
+  const [voted, setVoted] = useState(false);
+  const [votes, setVotes] = useState<number | undefined>((item as any).votes_24h);
+  async function upvote() {
+    if (voted) return;
+    setVoted(true);
+    try {
+      const r = await fetch('/api/deal-votes', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ inventory_id: item.id }) });
+      const d = await r.json().catch(() => ({}));
+      if (d?.votes_24h != null) setVotes(d.votes_24h);
+    } catch {}
+  }
   const reduce = useReducedMotion();
 
   return (
-    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden">
+    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border border-gray-300 shadow p-2.5 bg-white overflow-hidden">
       <div className="flex gap-3">
         <div className="shrink-0 w-[72px]">
           {item.image_url ? (
@@ -118,12 +133,12 @@ export default function ItemCard({ item }: { item: Item }) {
           ) : (
             <div className="h-[72px] w-[72px] rounded-lg bg-gray-100 border" />
           )}
-          <div className="mt-1">
+          <button className="mt-1 w-full" onClick={() => setOpenHistory(true)} title="View price history">
             <PriceSparkline retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} w={72} h={12} />
-          </div>
+          </button>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2 text-[10px] text-gray-500">
+          <div className="flex items-center justify-between gap-2 text-[10px] text-gray-600">
             <div className="min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
               <span>{timeAgoShort(item.seen_at)}</span>
@@ -137,9 +152,15 @@ export default function ItemCard({ item }: { item: Item }) {
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
           </a>
-          <div className="mt-1 text-[11px] text-gray-600 truncate">
+          <div className="mt-1 text-[11px] text-gray-700 truncate">
             {item.sku ? <span className="mr-2">{item.sku}</span> : null}
-            <span>{item.store?.name || item.store_id}{item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ""}` : ""}</span>
+            <span>
+              {item.store?.name || item.store_id}
+              {item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ""}` : ""}
+              {typeof item.distance_miles === 'number' ? (
+                <span className="text-gray-500"> {` (~${item.distance_miles.toFixed(1)} mi)`}</span>
+              ) : null}
+            </span>
           </div>
           <div className="mt-2 flex items-center justify-end gap-1">
             <div className="text-right shrink-0">
@@ -155,6 +176,10 @@ export default function ItemCard({ item }: { item: Item }) {
                   <Share2 size={14} />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={upvote} disabled={voted} title="Mark helpful">
+                  <ThumbsUp size={14} />
+                  <span className="hidden sm:inline">Helpful{typeof votes === 'number' ? ` (${votes})` : ''}</span>
+                </Button>
               </div>
             </div>
           </div>
@@ -165,6 +190,21 @@ export default function ItemCard({ item }: { item: Item }) {
         onOpenChange={setOpen}
         defaults={{ retailer: item.retailer as any, sku: item.sku ?? undefined }}
       />
+      <Drawer open={openHistory} onOpenChange={setOpenHistory}>
+        <DrawerContent side="right">
+          <div className="flex h-full flex-col gap-3">
+            <DrawerHeader>
+              <h3 className="text-lg font-semibold">Price History</h3>
+              <DrawerClose asChild>
+                <Button variant="outline" size="sm">Close</Button>
+              </DrawerClose>
+            </DrawerHeader>
+            <div className="px-3 pb-3">
+              <PriceHistoryChart retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} />
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </m.li>
   );
 }
