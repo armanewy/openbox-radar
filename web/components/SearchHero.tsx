@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function SearchHero() {
+type Props = { subtitle?: string };
+
+export default function SearchHero({ subtitle }: Props) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [retailer, setRetailer] = useState("");
@@ -24,7 +26,7 @@ export default function SearchHero() {
   return (
     <section className="space-y-3">
       <h1 className="text-3xl font-semibold">Catch open-box deals before they’re gone.</h1>
-      <p className="text-gray-600">Search by SKU, product, or keywords.</p>
+      <p className="text-gray-600">{subtitle || 'Search by SKU, product, or keywords.'}</p>
       <form onSubmit={submit} className="mt-4 flex flex-col sm:flex-row gap-2">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search open-box (title or SKU)" className="h-12 rounded-xl flex-1" />
         <Button variant="brand" className="h-12 rounded-xl px-5">Search</Button>
