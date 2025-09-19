@@ -17,6 +17,8 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   const [radius, setRadius] = useState(25);
   const [minCondition, setMinCondition] = useState("fair");
   const [priceCeiling, setPriceCeiling] = useState("");
+  const [email, setEmail] = useState("");
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -28,7 +30,8 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   }, [open]);
 
   async function submit() {
-    const payload: WatchPayload = {
+    setErr("");
+    const payload: WatchPayload & { email?: string; next?: string } = {
       retailer: defaults.retailer,
       sku: defaults.sku,
       product_url: defaults.product_url,
@@ -39,6 +42,8 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
       price_ceiling_cents: priceCeiling ? Math.round(Number(priceCeiling) * 100) : undefined,
       min_condition: minCondition as any,
     };
+    if (email) (payload as any).email = email;
+    (payload as any).next = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/app';
     const ok = await create(payload);
     if (ok) onOpenChange(false);
   }
@@ -59,6 +64,12 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
             {defaults.sku ? (
               <div className="text-sm text-gray-600">SKU: <span className="font-medium">{defaults.sku}</span></div>
             ) : null}
+          </div>
+          <div className="px-1">
+            <label className="block text-sm text-gray-600">Email (to activate alerts)</label>
+            <Input className="mt-1" type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <p className="mt-1 text-xs text-gray-500">No password; we’ll send a magic link.</p>
+            {err ? <p className="text-sm text-red-600 mt-1">{err}</p> : null}
           </div>
           <div className="grid grid-cols-2 gap-2 px-1">
             <div>

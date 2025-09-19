@@ -43,6 +43,7 @@ export const watches = pgTable('watches', {
   stores: text('stores').array(),                             // text[] nullable
   price_ceiling_cents: integer('price_ceiling_cents'),
   min_condition: cond_rank_t('min_condition').notNull(),
+  verified: boolean('verified').notNull().default(false),
   active: boolean('active').notNull(),                        // no default shown in UI → required in inserts
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

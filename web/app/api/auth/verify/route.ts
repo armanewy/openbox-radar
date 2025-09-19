@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/drizzle/db';
-import { users, magicTokens } from '@/lib/drizzle/schema';
+import { users, magicTokens, watches } from '@/lib/drizzle/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { signSessionJWT } from '@/lib/auth/jwt';
 
@@ -48,7 +48,12 @@ export async function GET(req: Request) {
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
-    const dest = typeof next === 'string' && next.startsWith('/') ? next : '/';
+    // flip pending watches for this user to verified
+    try {
+      await db.update(watches).set({ verified: true }).where(and(eq(watches.user_id, user.id), eq(watches.verified, false)));
+    } catch {}
+
+    const dest = typeof next === 'string' && next.startsWith('/') ? next : '/app';
     return NextResponse.redirect(new URL(dest, process.env.APP_BASE_URL ?? 'http://localhost:3000'));
   } catch (err) {
     console.error('[verify] error', err);

@@ -29,7 +29,12 @@ export function useOptimisticWatch() {
         return await r.json();
       }
       if (r.status === 401) {
-        toast.error("Sign in required to create a watch");
+        const err = await r.json().catch(() => ({}));
+        if (err?.error === 'email_required') {
+          toast.error("Enter your email to activate alerts");
+        } else {
+          toast.error("Sign in required to create a watch");
+        }
         return null;
       }
       const err = await r.json().catch(() => ({}));
@@ -42,4 +47,3 @@ export function useOptimisticWatch() {
   }, []);
   return { create, loading } as const;
 }
-
