@@ -17,6 +17,7 @@ INGEST_URL = "http://localhost:3000/api/ingest"
 USE_REAL_MICROCENTER = "1"
 USE_REAL_BESTBUY = "1"
 USE_REAL_NEWEGG = "0"
+ALLOW_DEV_STUBS = "0"
 # Provide one of the following when USE_REAL_BESTBUY=1
 # BESTBUY_SKUS can be a comma-separated list like: 1234567,7654321
 BESTBUY_SKUS = ""
