@@ -1,18 +1,20 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const options = [
+const baseOptions = [
   { value: "relevance", label: "Relevance" },
   { value: "price_asc", label: "Price ↑" },
   { value: "price_desc", label: "Price ↓" },
   { value: "newest", label: "Newest" },
-  { value: "discount_desc", label: "Discount %" },
 ];
 
 export default function SortMenu() {
   const router = useRouter();
   const sp = useSearchParams();
   const current = sp.get("sort") || "relevance";
+  const retailer = sp.get("retailer");
+  const options = [...baseOptions];
+  if (retailer === 'bestbuy') options.push({ value: 'discount_desc', label: 'Discount %' });
 
   return (
     <label className="text-sm text-gray-700 inline-flex items-center gap-2">
@@ -36,4 +38,3 @@ export default function SortMenu() {
     </label>
   );
 }
-

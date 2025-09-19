@@ -4,6 +4,8 @@ import SearchHero from "@/components/SearchHero";
 import Carousel from "@/components/Carousel";
 import BestBuyAttribution from "@/components/BestBuyAttribution";
 import HowItWorks from "@/components/HowItWorks";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function Page() {
   const [email, setEmail] = useState("");
@@ -44,15 +46,8 @@ export default function Page() {
       <HowItWorks />
 
       <form onSubmit={sendLink} className="mt-2 flex gap-2 max-w-xl">
-        <input
-          type="email"
-          required
-          placeholder="you@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border rounded px-3 py-2 flex-1"
-        />
-        <button className="px-4 py-2 bg-black text-white rounded">Send sign-in link</button>
+        <Input type="email" required placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-10" />
+        <Button variant="brand" className="h-10">Send sign-in link</Button>
       </form>
 
       {sent && <p className="mt-3 text-green-700">Check your email for the sign-in link.</p>}

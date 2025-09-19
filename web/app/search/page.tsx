@@ -6,6 +6,7 @@ import FilterChips from "@/components/FilterChips";
 import SortMenu from "@/components/SortMenu";
 import FilterDrawer from "@/components/FilterDrawer";
 import SearchFiltersForm from "@/components/SearchFiltersForm";
+import SaveSearchButton from "@/components/SaveSearchButton";
 
 type Item = {
   id: number;
@@ -97,9 +98,22 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       </aside>
 
       <section className="col-span-12 md:col-span-9">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-3">
           <h1 className="text-xl font-semibold">Results</h1>
-          <SortMenu />
+          <div className="flex items-center gap-2">
+            <SortMenu />
+            <SaveSearchButton params={{
+              q,
+              retailer,
+              sku,
+              min_condition,
+              price_min,
+              price_max,
+              zip,
+              radius_miles,
+              store_id: typeof searchParams.store_id === 'string' ? searchParams.store_id : ''
+            }} />
+          </div>
         </div>
         <FilterChips />
 

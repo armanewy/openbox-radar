@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 type Props = {
   open: boolean;
   onOpenChange: (next: boolean) => void;
-  defaults: Partial<WatchPayload> & { retailer: "bestbuy" | "microcenter" };
+  defaults: Partial<WatchPayload> & { retailer?: "bestbuy" | "microcenter" };
 };
 
 export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   const { create, loading } = useOptimisticWatch();
+  const [retailer, setRetailer] = useState<"bestbuy" | "microcenter">((defaults.retailer as any) || "bestbuy");
   const [zipcode, setZipcode] = useState("");
   const [radius, setRadius] = useState(25);
   const [minCondition, setMinCondition] = useState("fair");
@@ -32,7 +33,7 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   async function submit() {
     setErr("");
     const payload: WatchPayload & { email?: string; next?: string } = {
-      retailer: defaults.retailer,
+      retailer,
       sku: defaults.sku,
       product_url: defaults.product_url,
       keywords: defaults.keywords,
@@ -59,11 +60,21 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
             </DrawerClose>
           </DrawerHeader>
           <div className="px-1 space-y-3">
-            <div className="text-sm text-gray-600">Retailer</div>
-            <div className="px-2 py-1 rounded bg-gray-100 inline-block text-sm">{defaults.retailer}</div>
-            {defaults.sku ? (
-              <div className="text-sm text-gray-600">SKU: <span className="font-medium">{defaults.sku}</span></div>
-            ) : null}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm text-gray-600">Retailer</label>
+                <select className="mt-1 w-full border rounded px-3 py-2" value={retailer} onChange={(e) => setRetailer(e.target.value as any)}>
+                  <option value="bestbuy">Best Buy</option>
+                  <option value="microcenter">Micro Center</option>
+                </select>
+              </div>
+              {defaults.sku ? (
+                <div>
+                  <label className="block text-sm text-gray-600">SKU</label>
+                  <div className="mt-1 px-2 py-2 rounded bg-gray-100 text-sm">{defaults.sku}</div>
+                </div>
+              ) : null}
+            </div>
           </div>
           <div className="px-1">
             <label className="block text-sm text-gray-600">Email (to activate alerts)</label>
