@@ -175,12 +175,12 @@
 
 ### Landing page
 
-* [ ] Replace clutter with 3 blocks:
+* [x] Replace clutter with 3 blocks:
 
   * Big search bar
   * **“Hot Now”** (Top drops past 24h) → query `/api/inventory/trending?window=24h&sort=drop_pct`
   * **“Near You”** (if user provides ZIP once, store in localStorage)
-* [ ] Files:
+* [x] Files:
 
   * `web/app/(marketing)/page.tsx` → simplify to hero + two sections
   * New comp: `web/components/RadarSweep.tsx` (simple CSS animation with pulsing “blips” from top 10 drops)
