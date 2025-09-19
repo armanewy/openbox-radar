@@ -25,7 +25,26 @@ const WatchInput = z.object({
 export async function GET() {
   const s = getSession();
   if (!s) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const rows = await db.select().from(watches).where(eq(watches.user_id, s.uid));
+  // Select explicit columns to be compatible with DBs that haven't applied the
+  // `verified` migration yet.
+  const rows = await db
+    .select({
+      id: watches.id,
+      user_id: watches.user_id,
+      retailer: watches.retailer,
+      sku: watches.sku,
+      product_url: watches.product_url,
+      keywords: watches.keywords,
+      zipcode: watches.zipcode,
+      radius_miles: watches.radius_miles,
+      stores: watches.stores,
+      price_ceiling_cents: watches.price_ceiling_cents,
+      min_condition: watches.min_condition,
+      active: watches.active,
+      created_at: watches.created_at,
+    })
+    .from(watches)
+    .where(eq(watches.user_id, s.uid));
   return NextResponse.json({ watches: rows });
 }
 
@@ -62,21 +81,45 @@ export async function POST(req: NextRequest) {
       if (info?.sku) sku = info.sku;
     } catch {}
   }
-  const w = await db.insert(watches).values({
-    user_id: userId!,
-    retailer: parsed.data.retailer as any,
-    sku: sku ?? null,
-    product_url: parsed.data.product_url ?? null,
-    keywords: parsed.data.keywords ?? null,                                  // [] | null
-    zipcode: parsed.data.zipcode ?? null,
-    radius_miles: (parsed.data.radius_miles ?? parsed.data.radius_miles) ?? null,
-    stores: parsed.data.stores ?? null,                                      // [] | null
-    price_ceiling_cents:
-      (parsed.data.price_ceiling_cents ?? parsed.data.price_ceiling_cents) ?? null,
-    min_condition: (parsed.data.min_condition ?? parsed.data.min_condition) as any,
-    verified: !!s, // if not signed-in, pending until verify
-    active: true, // REQUIRED (DB says NOT NULL, no default)
-  }).returning();
+  let w;
+  try {
+    w = await db.insert(watches).values({
+      user_id: userId!,
+      retailer: parsed.data.retailer as any,
+      sku: sku ?? null,
+      product_url: parsed.data.product_url ?? null,
+      keywords: parsed.data.keywords ?? null,                                  // [] | null
+      zipcode: parsed.data.zipcode ?? null,
+      radius_miles: (parsed.data.radius_miles ?? parsed.data.radius_miles) ?? null,
+      stores: parsed.data.stores ?? null,                                      // [] | null
+      price_ceiling_cents:
+        (parsed.data.price_ceiling_cents ?? parsed.data.price_ceiling_cents) ?? null,
+      min_condition: (parsed.data.min_condition ?? parsed.data.min_condition) as any,
+      verified: !!s, // if not signed-in, pending until verify
+      active: true, // REQUIRED (DB says NOT NULL, no default)
+    }).returning();
+  } catch (e: any) {
+    // If the DB hasn't applied the `verified` column yet, retry without it
+    const msg = String(e?.message || e);
+    if (msg.includes('column "verified" does not exist') || msg.includes('verified')) {
+      w = await db.insert(watches).values({
+        user_id: userId!,
+        retailer: parsed.data.retailer as any,
+        sku: sku ?? null,
+        product_url: parsed.data.product_url ?? null,
+        keywords: parsed.data.keywords ?? null,
+        zipcode: parsed.data.zipcode ?? null,
+        radius_miles: (parsed.data.radius_miles ?? parsed.data.radius_miles) ?? null,
+        stores: parsed.data.stores ?? null,
+        price_ceiling_cents:
+          (parsed.data.price_ceiling_cents ?? parsed.data.price_ceiling_cents) ?? null,
+        min_condition: (parsed.data.min_condition ?? parsed.data.min_condition) as any,
+        active: true,
+      }).returning();
+    } else {
+      throw e;
+    }
+  }
 
   // If anonymous flow, send magic link (throttled like /api/auth/magic-link)
   if (!s && email) {
