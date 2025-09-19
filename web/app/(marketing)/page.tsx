@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import SearchHero from "@/components/SearchHero";
 import Carousel from "@/components/Carousel";
 import BestBuyAttribution from "@/components/BestBuyAttribution";
+import HowItWorks from "@/components/HowItWorks";
 
 export default function Page() {
   const [email, setEmail] = useState("");
@@ -40,6 +41,7 @@ export default function Page() {
   return (
     <main className="container mx-auto max-w-7xl p-6 space-y-10">
       <SearchHero />
+      <HowItWorks />
 
       <form onSubmit={sendLink} className="mt-2 flex gap-2 max-w-xl">
         <input

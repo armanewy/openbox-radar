@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function SearchHero() {
   const router = useRouter();
@@ -22,13 +24,8 @@ export default function SearchHero() {
       <h1 className="text-3xl font-semibold">Catch open-box deals before they’re gone.</h1>
       <p className="text-gray-600">Search by SKU, product, or keywords.</p>
       <form onSubmit={submit} className="mt-4 flex flex-col sm:flex-row gap-2">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search open-box (title or SKU)"
-          className="border rounded-xl px-4 py-3 flex-1"
-        />
-        <button className="px-5 py-3 bg-black text-white rounded-xl">Search</button>
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search open-box (title or SKU)" className="h-12 rounded-xl flex-1" />
+        <Button variant="brand" className="h-12 rounded-xl px-5">Search</Button>
       </form>
       <div className="flex items-center gap-2 text-sm">
         <span>Quick filters:</span>
@@ -39,4 +36,3 @@ export default function SearchHero() {
     </section>
   );
 }
-

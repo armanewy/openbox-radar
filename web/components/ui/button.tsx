@@ -8,6 +8,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-black text-white hover:opacity-90",
+        brand: "bg-brand text-black hover:bg-brand-600 hover:text-white",
         outline: "border border-input bg-transparent hover:bg-gray-50",
         ghost: "hover:bg-gray-100",
       },
@@ -35,4 +36,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
 Button.displayName = "Button";
 
 export { Button, buttonVariants };
-
