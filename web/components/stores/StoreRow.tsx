@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import WatchSheet from "@/components/watch/WatchSheet";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   retailer: "bestbuy" | "microcenter";
@@ -20,10 +21,9 @@ export default function StoreRow({ retailer, store }: Props) {
         <Link className="px-3 py-2 border rounded" href={`/search?retailer=${encodeURIComponent(retailer)}&store_id=${encodeURIComponent(store.store_id)}`}>
           Browse inventory
         </Link>
-        <button className="px-3 py-2 bg-black text-white rounded" onClick={() => setOpen(true)}>Watch this store</button>
+        <Button variant="brand" onClick={() => setOpen(true)}>Watch this store</Button>
         <WatchSheet open={open} onOpenChange={setOpen} defaults={{ retailer, stores: [store.store_id] }} />
       </div>
     </li>
   );
 }
-

@@ -79,7 +79,7 @@ export default function NewWatchWizard() {
           </select>
           <div className="flex justify-end gap-2">
             <button className="px-4 py-2 border rounded" onClick={() => router.push("/app")}>Cancel</button>
-            <button className="px-4 py-2 bg-black text-white rounded" onClick={() => setStep(2)}>Next</button>
+            <button className="px-4 py-2 bg-brand text-black rounded" onClick={() => setStep(2)}>Next</button>
           </div>
         </section>
       )}
@@ -124,7 +124,7 @@ export default function NewWatchWizard() {
           )}
           <div className="flex justify-between">
             <button className="px-4 py-2 border rounded" onClick={() => setStep(1)}>Back</button>
-            <button className="px-4 py-2 bg-black text-white rounded" onClick={() => setStep(3)}>Next</button>
+            <button className="px-4 py-2 bg-brand text-black rounded" onClick={() => setStep(3)}>Next</button>
           </div>
         </section>
       )}
@@ -136,7 +136,7 @@ export default function NewWatchWizard() {
           <input placeholder="Keywords (comma-separated)" value={keywords} onChange={(e) => setKeywords(e.target.value)} className="w-full border rounded px-3 py-2" />
           <div className="flex justify-between">
             <button className="px-4 py-2 border rounded" onClick={() => setStep(2)}>Back</button>
-            <button className="px-4 py-2 bg-black text-white rounded" onClick={() => setStep(4)}>Next</button>
+            <button className="px-4 py-2 bg-brand text-black rounded" onClick={() => setStep(4)}>Next</button>
           </div>
         </section>
       )}
@@ -162,7 +162,7 @@ export default function NewWatchWizard() {
           </div>
           <div className="flex justify-between">
             <button className="px-4 py-2 border rounded" onClick={() => setStep(3)}>Back</button>
-            <button className="px-4 py-2 bg-black text-white rounded" onClick={submit}>Create Watch</button>
+            <button className="px-4 py-2 bg-brand text-black rounded" onClick={submit}>Create Watch</button>
           </div>
         </section>
       )}

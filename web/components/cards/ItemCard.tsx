@@ -150,7 +150,7 @@ export default function ItemCard({ item }: { item: Item }) {
                     <span className="hidden sm:inline">View</span>
                   </Button>
                 </a>
-                <Button size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={14} /> Watch</Button>
+                <Button variant="brand" size="sm" className="inline-flex gap-1" onClick={() => setOpen(true)}><Heart size={14} /> Watch</Button>
                 <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}>
                   <Share2 size={14} />
                   <span className="hidden sm:inline">Share</span>

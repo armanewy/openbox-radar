@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { absoluteUrl } from "@/lib/utils/url";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default async function AppPage() {
   const s = getSession();
@@ -23,7 +25,7 @@ async function Watches() {
     <main className="max-w-3xl mx-auto p-8 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Your Watches</h1>
-        <a href="/app/watches/new" className="px-3 py-2 bg-black text-white rounded">Create new</a>
+        <Link href="/app/watches/new"><Button variant="brand" size="sm">Create new</Button></Link>
       </div>
       <form className="grid grid-cols-2 gap-3" action={createWatch}>
         <select name="retailer" className="border rounded px-2 py-2">
@@ -34,7 +36,7 @@ async function Watches() {
         <input name="zipcode" placeholder="ZIP code" required className="border rounded px-2 py-2" />
         <input name="radius_miles" type="number" defaultValue={25} className="border rounded px-2 py-2" />
         <input name="price_ceiling_usd" type="number" placeholder="Max price (USD)" className="border rounded px-2 py-2 col-span-2" />
-        <button className="px-4 py-2 bg-black text-white rounded col-span-2">Add Watch</button>
+        <Button variant="brand" className="col-span-2">Add Watch</Button>
       </form>
 
       <section>
@@ -52,7 +54,7 @@ async function Watches() {
                 </div>
                 <form action={deleteWatch}>
                   <input type="hidden" name="id" value={w.id} />
-                  <button className="px-3 py-2 border rounded">Delete</button>
+                  <Button variant="outline" size="sm">Delete</Button>
                 </form>
               </li>
             ))}

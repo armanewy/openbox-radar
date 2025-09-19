@@ -67,7 +67,7 @@ export default function SearchFiltersForm({ q, retailer, sku, min_condition, pri
           <Input name="radius_miles" type="number" defaultValue={radius_miles} />
         </div>
       </div>
-      <Button className="w-full mt-2">Apply</Button>
+      <Button variant="brand" className="w-full mt-2">Apply</Button>
     </form>
   );
 }
