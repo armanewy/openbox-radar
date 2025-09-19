@@ -117,3 +117,23 @@ export const price_history = pgTable('price_history', {
 
 export type PriceHistory = typeof price_history.$inferSelect;
 export type NewPriceHistory = typeof price_history.$inferInsert;
+
+// Alerts ledger (optional; enable via manual SQL in prod)
+export const alert_events = pgTable('alert_events', {
+  id: serial('id').primaryKey(),
+  watch_id: uuid('watch_id'),
+  inventory_id: integer('inventory_id'),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type AlertEvent = typeof alert_events.$inferSelect;
+
+// Deal votes (optional, for community signal)
+export const deal_votes = pgTable('deal_votes', {
+  id: serial('id').primaryKey(),
+  inventory_id: integer('inventory_id').notNull(),
+  voter_hash: text('voter_hash').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type DealVote = typeof deal_votes.$inferSelect;

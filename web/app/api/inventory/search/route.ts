@@ -153,6 +153,20 @@ export async function GET(req: NextRequest) {
     geoMeta = { zip, radiusMiles, supported: false };
   }
 
+  // Optional Most upvoted (24h) sort: compute votes via separate query if requested
+  let votesMap: Record<number, number> | null = null;
+  if (sort === 'upvoted' && items.length) {
+    try {
+      const ids = items.map((r) => r.id);
+      const res = await fetch(`${process.env.APP_BASE_URL || ''}/api/deal-votes?ids=${ids.join(',')}`);
+      if (res.ok) {
+        const d = await res.json();
+        votesMap = d.votes || {};
+        items.sort((a, b) => (votesMap![b.id] || 0) - (votesMap![a.id] || 0));
+      }
+    } catch {}
+  }
+
   return NextResponse.json({
     items: items.map((r) => ({
       id: r.id,
@@ -173,6 +187,7 @@ export async function GET(req: NextRequest) {
         state: r.store_state,
         zipcode: r.store_zip,
       },
+      votes_24h: votesMap ? votesMap[r.id] || 0 : undefined,
     })),
     nextCursor,
     geo: geoMeta,

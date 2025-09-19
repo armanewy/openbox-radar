@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { ExternalLink, Heart, Share2 } from "lucide-react";
+import { ExternalLink, Heart, Share2, ThumbsUp } from "lucide-react";
 import WatchSheet from "@/components/watch/WatchSheet";
 import PriceSparkline from "@/components/cards/PriceSparkline";
 import PriceHistoryChart from "@/components/PriceHistoryChart";
@@ -88,6 +88,17 @@ export default function ItemCard({ item }: { item: Item }) {
   }, [item.url]);
   const [open, setOpen] = useState(false);
   const [openHistory, setOpenHistory] = useState(false);
+  const [voted, setVoted] = useState(false);
+  const [votes, setVotes] = useState<number | undefined>((item as any).votes_24h);
+  async function upvote() {
+    if (voted) return;
+    setVoted(true);
+    try {
+      const r = await fetch('/api/deal-votes', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ inventory_id: item.id }) });
+      const d = await r.json().catch(() => ({}));
+      if (d?.votes_24h != null) setVotes(d.votes_24h);
+    } catch {}
+  }
   const reduce = useReducedMotion();
 
   return (
@@ -164,6 +175,10 @@ export default function ItemCard({ item }: { item: Item }) {
                 <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={copy}>
                   <Share2 size={14} />
                   <span className="hidden sm:inline">Share</span>
+                </Button>
+                <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={upvote} disabled={voted} title="Mark helpful">
+                  <ThumbsUp size={14} />
+                  <span className="hidden sm:inline">Helpful{typeof votes === 'number' ? ` (${votes})` : ''}</span>
                 </Button>
               </div>
             </div>

@@ -137,7 +137,7 @@
 
 ### Worker
 
-* [ ] **Matcher**: `worker/src/alerts/matcher.ts`
+* [x] **Matcher**: `worker/src/alerts/matcher.ts`
 
   * Load all `watches` (paged)
   * For each, query recent inventory snapshots that satisfy:
@@ -148,12 +148,12 @@
   * Deduplicate by `(watch_id, inventory_id)` via `alert_events` insert-on-conflict
   * Return list of `{ watchId, email, matches[] }`
 
-* [ ] **Sender**: `worker/src/alerts/sender.ts`
+* [x] **Sender**: `worker/src/alerts/sender.ts`
 
   * For now email only (Resend key you already support)—batch per watch
   * Env: `RESEND_API_KEY` (already in web; mirror in worker or call a web endpoint to send)
 
-* [ ] **Scheduler**: `worker/src/index.ts`
+* [x] **Scheduler**: `worker/src/index.ts`
 
   * Add `/alerts` route requiring `x-cron-secret`
   * CRON trigger every 5–10 min in prod
