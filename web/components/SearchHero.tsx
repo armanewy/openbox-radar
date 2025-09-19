@@ -13,14 +13,19 @@ export default function SearchHero({ subtitle }: Props) {
   const [minCondition, setMinCondition] = useState("");
   const { track } = require("@/lib/analytics");
 
+  function buildQuery(nextRetailer = retailer, nextMin = minCondition, nextQ = q) {
+    const u = new URLSearchParams();
+    if (nextQ) u.set("q", nextQ);
+    if (nextRetailer) u.set("retailer", nextRetailer);
+    if (nextMin) u.set("min_condition", nextMin);
+    return u.toString();
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const u = new URLSearchParams();
-    if (q) u.set("q", q);
-    if (retailer) u.set("retailer", retailer);
-    if (minCondition) u.set("min_condition", minCondition);
+    const qp = buildQuery();
     track('search_submit', { q, retailer, minCondition });
-    router.push(`/search?${u.toString()}`);
+    router.push(`/search?${qp}`);
   }
 
   return (
@@ -33,9 +38,30 @@ export default function SearchHero({ subtitle }: Props) {
       </form>
       <div className="flex items-center gap-2 text-sm">
         <span>Quick filters:</span>
-        <button onClick={() => setRetailer(retailer === "bestbuy" ? "" : "bestbuy")} className={`px-3 py-1.5 rounded-full border ${retailer === 'bestbuy' ? 'bg-brand text-black' : 'bg-white'}`}>Best Buy</button>
-        <button onClick={() => setRetailer(retailer === "microcenter" ? "" : "microcenter")} className={`px-3 py-1.5 rounded-full border ${retailer === 'microcenter' ? 'bg-brand text-black' : 'bg-white'}`}>Micro Center</button>
-        <button onClick={() => setMinCondition(minCondition === "excellent" ? "" : "excellent")} className={`px-3 py-1.5 rounded-full border ${minCondition === 'excellent' ? 'bg-brand text-black' : 'bg-white'}`}>Excellent+</button>
+        <button
+          onClick={() => {
+            const next = retailer === 'bestbuy' ? '' : 'bestbuy';
+            setRetailer(next);
+            router.push(`/search?${buildQuery(next, minCondition, q)}`);
+          }}
+          className={`px-3 py-1.5 rounded-full border ${retailer === 'bestbuy' ? 'bg-brand text-black' : 'bg-white'}`}
+        >Best Buy</button>
+        <button
+          onClick={() => {
+            const next = retailer === 'microcenter' ? '' : 'microcenter';
+            setRetailer(next);
+            router.push(`/search?${buildQuery(next, minCondition, q)}`);
+          }}
+          className={`px-3 py-1.5 rounded-full border ${retailer === 'microcenter' ? 'bg-brand text-black' : 'bg-white'}`}
+        >Micro Center</button>
+        <button
+          onClick={() => {
+            const next = minCondition === 'excellent' ? '' : 'excellent';
+            setMinCondition(next);
+            router.push(`/search?${buildQuery(retailer, next, q)}`);
+          }}
+          className={`px-3 py-1.5 rounded-full border ${minCondition === 'excellent' ? 'bg-brand text-black' : 'bg-white'}`}
+        >Excellent+</button>
       </div>
     </section>
   );

@@ -102,7 +102,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const reduce = useReducedMotion();
 
   return (
-    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden">
+    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border border-gray-200 shadow-sm p-2.5 bg-white overflow-hidden">
       <div className="flex gap-3">
         <div className="shrink-0 w-[72px]">
           {item.image_url ? (

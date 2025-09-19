@@ -22,7 +22,7 @@ export default async function Page() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <div className="rounded-xl border p-4 bg-white/70">
+        <div className="rounded-xl border border-gray-200 p-4 bg-white">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold">Hot Now</h2>
             <Link href="/search" className="text-sm underline">Browse all</Link>
@@ -38,7 +38,7 @@ export default async function Page() {
             ))}
           </ul>
         </div>
-        <div className="rounded-xl border p-4 bg-white/70">
+        <div className="rounded-xl border border-gray-200 p-4 bg-white">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold">Near You</h2>
             <Link href="/search/map" className="text-sm underline">Map</Link>
