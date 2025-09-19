@@ -4,8 +4,8 @@
 
 ## 0) Prep / conventions
 
-* [ ] Create branch: `feat/geo-alerts-history-ui`
-* [ ] Add env placeholders in `web/.env.example` and `worker/wrangler.toml` as noted below.
+* [x] Create branch: `feat/geo-alerts-history-ui`
+* [x] Add env placeholders in `web/.env.example` and `worker/wrangler.toml` as noted below.
 * [ ] Enable pg\_trgm + confirm existing indexes (you already have them).
 
 ---
@@ -49,7 +49,7 @@
 
   * `web/app/search/_components/FilterDrawer.tsx` → add fields `zip`, `radius`
   * Display active chip in filter bar
-* [ ] Map view (MVP):
+* [x] Map view (MVP):
 
   * New route: `web/app/search/map/page.tsx`
   * Use `<MapboxGL/>` later; for now a simple leaf cluster component or even a list grouped by store distance.
@@ -265,7 +265,7 @@
 
   * `web/lib/drizzle/migrations/0027_users_plan.sql`
 * [ ] Gate: free = 3 watches, pro = 50 (just enforce in API; UI shows hint).
-* [ ] Add placeholders for Stripe keys in `web/.env.example` for later.
+* [x] Add placeholders for Stripe keys in `web/.env.example` for later.
 
 **Acceptance**
 
@@ -275,8 +275,8 @@
 
 ## 8) Observability & guardrails
 
-* [ ] Add **structured logs** in worker (`/alerts`, `/cron`) with counts & latency.
-* [ ] Add **/api/health** in web returning DB, migrations, and last-cron times.
+* [x] Add **structured logs** in worker (`/alerts`, `/cron`) with counts & latency.
+* [x] Add **/api/health** in web returning DB, migrations, and last-cron times.
 
   * `web/app/api/health/route.ts`
 

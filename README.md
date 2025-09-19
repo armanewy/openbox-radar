@@ -191,6 +191,7 @@ UI highlights
 - Infinite scroll + “Load more” fallback; skeletons
 - Cards: thumbnails (Next/Image), inline price badge, compact badges, sparkline (under image)
 - “Watch” opens a drawer; anonymous users can enter email to receive a magic link
+- Map view (MVP): `/search/map` groups results by store with distance labels
 
 ## Deployment
 
