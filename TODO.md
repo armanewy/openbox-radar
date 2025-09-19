@@ -14,17 +14,17 @@
 
 ### Data & utils
 
-* [ ] **Add ZIP→lat/lng**: `web/lib/geo/zipdb.ts`
+* [x] **Add ZIP→lat/lng**: `web/lib/geo/zipdb.ts`
 
   * Accept a minimal embedded CSV (US only for now) or wire up to a table later.
   * Export: `lookupZip(zip: string): { lat: number; lng: number } | null`
-* [ ] **Haversine util**: `web/lib/geo/distance.ts`
+* [x] **Haversine util**: `web/lib/geo/distance.ts`
 
   * `export function milesBetween(a:{lat:number,lng:number}, b:{lat:number,lng:number}): number`
 
 ### DB (stores need coords)
 
-* [ ] **Add columns** to `stores`:
+* [x] **Add columns** to `stores`:
 
   * Migration file: `web/lib/drizzle/migrations/0023_stores_lat_lng.sql`
 
@@ -38,14 +38,14 @@
 
 ### API
 
-* [ ] Extend search handler `web/app/api/inventory/search/route.ts`
+* [x] Extend search handler `web/app/api/inventory/search/route.ts`
 
   * New query params: `zip`, `radius_miles`
   * Flow: if both present → lookup ZIP → fetch candidate stores by retailer (or all) → compute distance in app layer → filter results post-query or join stores and filter by a rough bounding box (±radius/69 deg) then refine in Node.
 
 ### UI
 
-* [ ] Add ZIP & Radius inputs:
+* [x] Add ZIP & Radius inputs:
 
   * `web/app/search/_components/FilterDrawer.tsx` → add fields `zip`, `radius`
   * Display active chip in filter bar
@@ -65,7 +65,7 @@
 
 ### DB
 
-* [ ] New table `price_history`:
+* [x] New table `price_history`:
 
   * `web/lib/drizzle/migrations/0024_price_history.sql`
 
@@ -81,13 +81,13 @@
     );
     CREATE INDEX IF NOT EXISTS idx_ph_compound ON public.price_history (retailer, store_id, COALESCE(sku, url), seen_at DESC);
     ```
-* [ ] **Web ingest** (`web/app/api/ingest/route.ts`):
+* [x] **Web ingest** (`web/app/api/ingest/route.ts`):
 
   * After dedupe/insert to `inventory`, also `INSERT` into `price_history` (always append).
 
 ### API
 
-* [ ] New endpoint: `GET /api/inventory/history`
+* [x] New endpoint: `GET /api/inventory/history`
 
   * `web/app/api/inventory/history/route.ts`
   * Params: `retailer`, `store_id`, `sku | url`, `limit`
@@ -95,7 +95,7 @@
 
 ### UI
 
-* [ ] **ItemCard sparkline** already exists—augment:
+* [x] **ItemCard sparkline** already exists—augment:
 
   * Click → open Drawer with full **Price History** chart
   * New comp: `web/components/PriceHistoryChart.tsx` (fetches `/api/inventory/history`)
@@ -197,7 +197,7 @@
 
 ### Worker
 
-* [ ] Introduce common interface: `worker/src/adapters/types.ts`
+* [x] Introduce common interface: `worker/src/adapters/types.ts`
 
   ```ts
   export type NormalizedItem = {
@@ -217,11 +217,11 @@
   }
   ```
 * [ ] Refactor BB + MC adapters to implement it.
-* [ ] Add **Newegg clearance scaffold**:
+* [x] Add **Newegg clearance scaffold**:
 
   * `worker/src/adapters/newegg_clearance.ts` (DOM scrape stub returning empty in dev)
   * Flag: `USE_REAL_NEWEGG`
-* [ ] Update scheduler `worker/src/scheduler.ts` to loop adapters by flags.
+* [x] Update scheduler `worker/src/scheduler.ts` to loop adapters by flags.
 
 **Acceptance**
 

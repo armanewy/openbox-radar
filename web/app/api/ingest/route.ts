@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle/db';
-import { inventory } from '@/lib/drizzle/schema';
+import { inventory, price_history } from '@/lib/drizzle/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -77,6 +77,19 @@ export async function POST(req: NextRequest) {
       seen_at: seenAt,
       image_url: it.imageUrl ?? null,
     }).onConflictDoNothing();
+    // Append to price history (best effort)
+    try {
+      await db.insert(price_history).values({
+        retailer: it.retailer,
+        store_id: it.storeId,
+        sku: it.sku ?? null,
+        url: it.url,
+        price_cents: it.priceCents,
+        seen_at: seenAt,
+      });
+    } catch {
+      // If table missing, ignore
+    }
     inserted++;
   }
 

@@ -179,10 +179,11 @@ Web cron
 ## Search API & UI
 
 Search API: `GET /api/inventory/search`
-- Filters: `q`, `retailer`, `store_id` (repeat/comma), `sku`, `price_min/max` (USD), `min_condition`
+- Filters: `q`, `retailer`, `store_id` (repeat/comma), `sku`, `price_min/max` (USD), `min_condition`, `zip`, `radius_miles`
 - Pagination: cursor on `(seen_at, id)`
 - Joins `stores` to enrich display fields
 - Includes `image_url` in results
+- When `zip` and `radius_miles` are provided, results are filtered by distance from the ZIP centroid to store coordinates. Unknown store coordinates are excluded. Response items include `distance_miles`.
 
 UI highlights
 - Sticky desktop filters + mobile Drawer; Filter chips; Sort (Dropdown)
@@ -215,12 +216,36 @@ Local dev
 - Trigger: `curl -H "x-cron-secret: <CRON_SECRET>" http://127.0.0.1:8787/cron`
 -- Inspect: `http://localhost:3000/api/inventory/search?limit=5`
 
+Seed a couple of dev items
+- Set `CRON_SECRET` in your env and run: `node scripts/seed_dev_items.js`
+
 Migrations
-- This repo no longer ships `.sql` files. If your DB predates the `watches.verified` column, add it:
-  ```sql
-  ALTER TABLE public.watches ADD COLUMN IF NOT EXISTS verified boolean NOT NULL DEFAULT false;
-  ```
-  The API tolerates missing `verified`, but enabling it provides the best UX for email‑first flow.
+- This repo no longer ships `.sql` files. Apply DDL manually if your DB is missing these structures:
+  - Watches magic-link UX (legacy installs):
+    ```sql
+    ALTER TABLE public.watches ADD COLUMN IF NOT EXISTS verified boolean NOT NULL DEFAULT false;
+    ```
+  - Geo radius support (store coordinates):
+    ```sql
+    ALTER TABLE public.stores
+      ADD COLUMN IF NOT EXISTS lat double precision,
+      ADD COLUMN IF NOT EXISTS lng double precision;
+    CREATE INDEX IF NOT EXISTS idx_stores_lat_lng ON public.stores (lat, lng);
+    ```
+  - Price history (append-only):
+    ```sql
+    CREATE TABLE IF NOT EXISTS public.price_history (
+      id bigserial PRIMARY KEY,
+      retailer text NOT NULL,
+      store_id text,
+      sku text,
+      url text,
+      price_cents integer NOT NULL,
+      seen_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_ph_compound ON public.price_history (retailer, store_id, COALESCE(sku, url), seen_at DESC);
+    ```
+  The history API prefers `price_history` when present; ingest appends to it.
 
 TLS & Drizzle CLI
 - Preferred: set `SUPABASE_CA_B64` so CLI can verify TLS
@@ -228,7 +253,7 @@ TLS & Drizzle CLI
 
 ## Notes & limitations
 - Best Buy Open Box API doesn’t expose store-level stock; items represent available open-box offers. Links expire after ~7 days; TTL is enforced (71h).
-- ZIP/radius filtering is a placeholder; needs ZIP → lat/lng table and distance filtering.
+- Geo filtering uses ZIP centroids and store coordinates when available; stores lacking coordinates are excluded when a radius filter is active. For best results, backfill `stores.lat/lng`.
 - Alerts/auth are minimal; extend as needed.
 
 ## Business logic & product behavior
@@ -262,11 +287,11 @@ This section describes the current user-facing logic.
   - Thumbnail (Next/Image for Best Buy domains; `<img>` fallback for others).
   - Compact meta (time ago, retailer, condition) + price badge on the right.
   - Title and store line; actions: View (outbound), Watch (drawer), Share (clipboard).
-  - Price sparkline under the thumbnail to avoid squeezing actions.
+  - Price sparkline under the thumbnail; click opens a full history drawer.
 
 - Ingestion & freshness
   - Worker pulls Best Buy (optional Micro Center) and POSTs to `/api/ingest`.
-  - Ingest dedupes snapshots by time window (`INGEST_DEDUPE_MIN` minutes) and unique keys; Best Buy links may expire in ~7 days.
+  - Ingest dedupes snapshots by time window (`INGEST_DEDUPE_MIN` minutes) and unique keys; appends to `price_history` when present; Best Buy links may expire in ~7 days.
 
 - Analytics (lightweight)
   - `/api/analytics` collects client events. Currently recorded: search submit, filters apply, watch create (pending/immediate), outbound click.

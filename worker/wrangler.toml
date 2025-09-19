@@ -12,6 +12,7 @@ CRON_SHARED_SECRET = "JB0uSHbUchIJ8iYpWKPQTk3Lqzcl332o4HWZNNKgKbzoXlS4dvy6bgZd+3
 INGEST_URL = "http://localhost:3000/api/ingest"
 USE_REAL_MICROCENTER = "1"
 USE_REAL_BESTBUY = "1"
+USE_REAL_NEWEGG = "0"
 # Provide one of the following when USE_REAL_BESTBUY=1
 # BESTBUY_SKUS can be a comma-separated list like: 1234567,7654321
 BESTBUY_SKUS = ""
@@ -22,3 +23,8 @@ BESTBUY_PAGE_SIZE = "30"
 
 # Set your key via env/secret in real deployments. Do not commit secrets.
 BESTBUY_API_KEY = "xg9RgsndaC0LkUz0XeqgtqYt"
+
+# Alerts (scaffold)
+ENABLE_ALERTS = "1"
+ALERTS_BATCH_SIZE = "500"
+# RESEND_API_KEY may be provided as a secret if sending from worker

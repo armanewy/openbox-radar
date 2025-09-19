@@ -103,3 +103,17 @@ export const stores = pgTable(
 
 export type Store = typeof stores.$inferSelect;
 export type NewStore = typeof stores.$inferInsert;
+
+// Optional append-only history for price points
+export const price_history = pgTable('price_history', {
+  id: serial('id').primaryKey(),
+  retailer: text('retailer').notNull(),
+  store_id: text('store_id'),
+  sku: text('sku'),
+  url: text('url'),
+  price_cents: integer('price_cents').notNull(),
+  seen_at: timestamp('seen_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type PriceHistory = typeof price_history.$inferSelect;
+export type NewPriceHistory = typeof price_history.$inferInsert;

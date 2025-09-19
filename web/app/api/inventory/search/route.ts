@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/drizzle/db";
 import { inventory, stores } from "@/lib/drizzle/schema";
 import { and, desc, asc, eq, ilike, inArray, lte, gte, or, lt } from "drizzle-orm";
+import { lookupZip } from "@/lib/geo/zipdb";
+import { milesBetween } from "@/lib/geo/distance";
 
 type Cursor = { seenAt: string; id: number };
 
@@ -97,6 +99,8 @@ export async function GET(req: NextRequest) {
       store_city: stores.city,
       store_state: stores.state,
       store_zip: stores.zipcode,
+      store_lat: stores.lat as any,
+      store_lng: stores.lng as any,
     })
     .from(inventory)
     .leftJoin(
@@ -115,8 +119,39 @@ export async function GET(req: NextRequest) {
     nextCursor = encodeCursor({ seenAt: last.seen_at.toISOString(), id: last.id });
   }
 
-  // Optional server-side distance filtering placeholder
-  // if (zip && radiusMiles) { /* requires ZIP lat/lng table */ }
+  // Server-side distance filtering using ZIP centroid
+  let origin: { lat: number; lng: number } | null = null;
+  const radius = radiusMiles ? Number(radiusMiles) : NaN;
+  if (zip && radius && !Number.isNaN(radius)) {
+    origin = lookupZip(zip);
+  }
+  let geoMeta: any = undefined;
+  if (origin && radius > 0) {
+    const filtered: typeof items = [] as any;
+    for (const r of items) {
+      let slat = typeof r.store_lat === 'number' ? r.store_lat : null;
+      let slng = typeof r.store_lng === 'number' ? r.store_lng : null;
+      if ((slat == null || slng == null) && r.store_zip) {
+        const p = lookupZip(r.store_zip);
+        if (p) {
+          slat = p.lat;
+          slng = p.lng;
+        }
+      }
+      if (slat == null || slng == null) {
+        continue; // cannot compute distance reliably → exclude
+      }
+      const d = milesBetween(origin, { lat: slat, lng: slng });
+      if (d <= radius) {
+        (r as any)._distance_miles = d;
+        filtered.push(r);
+      }
+    }
+    items = filtered;
+    geoMeta = { zip, radiusMiles: String(radius), supported: true, count: items.length };
+  } else if (zip || radiusMiles) {
+    geoMeta = { zip, radiusMiles, supported: false };
+  }
 
   return NextResponse.json({
     items: items.map((r) => ({
@@ -131,6 +166,7 @@ export async function GET(req: NextRequest) {
       url: r.url,
       seen_at: r.seen_at,
       image_url: r.image_url,
+      distance_miles: (r as any)._distance_miles,
       store: {
         name: r.store_name,
         city: r.store_city,
@@ -139,7 +175,6 @@ export async function GET(req: NextRequest) {
       },
     })),
     nextCursor,
-    // echo unsupported geo params for transparency
-    geo: zip || radiusMiles ? { zip, radiusMiles, supported: false } : undefined,
+    geo: geoMeta,
   });
 }

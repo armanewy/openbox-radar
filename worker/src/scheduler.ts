@@ -1,6 +1,7 @@
 import { fetchBestBuyStore, fetchMicroCenterStore } from "./adapters/stubs";
 import { fetchMicroCenterOpenBoxDOM } from "./adapters/microcenter_dom";
 import { fetchBestBuyOpenBoxBySkus, fetchBestBuyOpenBoxByCategory } from "./adapters/bestbuy_api";
+import { fetchNeweggClearance } from "./adapters/newegg_clearance";
 
 export const Scheduler = {
   async run(env: any) {
@@ -32,9 +33,13 @@ export const Scheduler = {
       bbyPromise = fetchBestBuyStore('bby-123');
     }
 
-    const batches = await Promise.all([bbyPromise, mcPromise]);
+    const useRealNE = env.USE_REAL_NEWEGG === '1';
+    const nePromise = fetchNeweggClearance(useRealNE);
+
+    const batches = await Promise.all([bbyPromise, mcPromise, nePromise]);
 
     const items = batches.flatMap((b) => b.items);
+    console.log('[scheduler] adapter batches:', batches.map((b) => `${b ? (b as any).storeId || 'unknown' : 'n/a'}:${b.items?.length ?? 0}`).join(', '));
     if (items.length === 0) return { ok: true, ingested: 0 };
 
     const ingestUrl: string = env.INGEST_URL || '';
