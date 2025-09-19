@@ -8,8 +8,8 @@ crons = ["*/10 * * * *"]
 [observability.logs]
 enabled = true
 
+
 [vars]
-CRON_SHARED_SECRET = ""
 
 # Point to your local Next dev server ingest endpoint
 # If your Next runs on :3001, change to http://localhost:3001/api/ingest
@@ -27,7 +27,7 @@ BESTBUY_CATEGORY = "abcat0502000"
 BESTBUY_PAGE_SIZE = "30"
 
 # Set your key via env/secret in real deployments. Do not commit secrets.
-BESTBUY_API_KEY = ""
+# Do NOT set secrets here; use `wrangler secret put` for sensitive values like CRON_SHARED_SECRET and BESTBUY_API_KEY
 
 # Alerts (scaffold)
 ENABLE_ALERTS = "1"
