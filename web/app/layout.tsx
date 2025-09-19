@@ -1,6 +1,7 @@
 import "./globals.css";
 import Link from "next/link";
 import { getSession } from "@/lib/utils/auth";
+import { Button } from "@/components/ui/button";
 import AppToaster from "@/components/ui/Toaster";
 
 export const metadata = {
@@ -26,10 +27,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-3 text-sm">
               {s ? (
                 <form action="/api/auth/signout" method="POST">
-                  <button className="px-3 py-1.5 border rounded">Sign out</button>
+                  <Button variant="outline" size="sm">Sign out</Button>
                 </form>
               ) : (
-                <Link href="/?signin=1" className="px-3 py-1.5 border rounded">Sign in</Link>
+                <Link href="/?signin=1"><Button variant="outline" size="sm">Sign in</Button></Link>
               )}
             </div>
           </div>

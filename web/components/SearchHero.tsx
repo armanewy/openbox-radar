@@ -31,9 +31,9 @@ export default function SearchHero() {
       </form>
       <div className="flex items-center gap-2 text-sm">
         <span>Quick filters:</span>
-        <button onClick={() => setRetailer(retailer === "bestbuy" ? "" : "bestbuy")} className={`px-3 py-1.5 rounded-full border ${retailer === 'bestbuy' ? 'bg-black text-white' : 'bg-white'}`}>Best Buy</button>
-        <button onClick={() => setRetailer(retailer === "microcenter" ? "" : "microcenter")} className={`px-3 py-1.5 rounded-full border ${retailer === 'microcenter' ? 'bg-black text-white' : 'bg-white'}`}>Micro Center</button>
-        <button onClick={() => setMinCondition(minCondition === "excellent" ? "" : "excellent")} className={`px-3 py-1.5 rounded-full border ${minCondition === 'excellent' ? 'bg-black text-white' : 'bg-white'}`}>Excellent+</button>
+        <button onClick={() => setRetailer(retailer === "bestbuy" ? "" : "bestbuy")} className={`px-3 py-1.5 rounded-full border ${retailer === 'bestbuy' ? 'bg-brand text-black' : 'bg-white'}`}>Best Buy</button>
+        <button onClick={() => setRetailer(retailer === "microcenter" ? "" : "microcenter")} className={`px-3 py-1.5 rounded-full border ${retailer === 'microcenter' ? 'bg-brand text-black' : 'bg-white'}`}>Micro Center</button>
+        <button onClick={() => setMinCondition(minCondition === "excellent" ? "" : "excellent")} className={`px-3 py-1.5 rounded-full border ${minCondition === 'excellent' ? 'bg-brand text-black' : 'bg-white'}`}>Excellent+</button>
       </div>
     </section>
   );
