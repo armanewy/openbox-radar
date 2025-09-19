@@ -230,3 +230,54 @@ TLS & Drizzle CLI
 - Best Buy Open Box API doesn’t expose store-level stock; items represent available open-box offers. Links expire after ~7 days; TTL is enforced (71h).
 - ZIP/radius filtering is a placeholder; needs ZIP → lat/lng table and distance filtering.
 - Alerts/auth are minimal; extend as needed.
+
+## Business logic & product behavior
+
+This section describes the current user-facing logic.
+
+- Browsing without login
+  - Home (Trending + Drops), search, filters, sort, and outbound clicks are open to everyone.
+  - Best Buy attribution is shown when relevant; outbound links open in a new tab.
+
+- Watch & Save search
+  - Watch drawer opens from a card; Save search opens the same drawer with filters prefilled.
+  - Signed-in users create an active watch immediately.
+  - Signed-out users add Email in the drawer; a pending watch is created and a magic link is sent. After using the link, session is established and watches flip to verified.
+
+- Identity
+  - Passwordless email via magic link; session JWT in `obr_session` cookie.
+  - Magic link tokens are one-use and expire after 15 minutes; sends are throttled (60s per email).
+
+- Search UX
+  - Filters: `q`, `retailer`, `sku`, `min_condition`, `price_min/max` (USD), `zip`, `radius_miles`, `store_id` (comma/repeat).
+  - Sort: Relevance (default), Price ↑/↓, Newest. “Discount %” is UI-gated to Best Buy and depends on MSRP availability.
+  - Pagination: keyset `(seen_at, id)` with `cursor`. Infinite scroll + “Load more” fallback.
+  - Accessibility: brand color for CTAs, visible focus rings, reduced motion respected.
+
+- Trending & drops logic
+  - Trending: latest inventory ordered by `seen_at DESC, id DESC`.
+  - Drops: past 7d compare prev vs current price for `(retailer, store_id, COALESCE(sku, url))`, list positive drops.
+
+- Cards (list tiles)
+  - Thumbnail (Next/Image for Best Buy domains; `<img>` fallback for others).
+  - Compact meta (time ago, retailer, condition) + price badge on the right.
+  - Title and store line; actions: View (outbound), Watch (drawer), Share (clipboard).
+  - Price sparkline under the thumbnail to avoid squeezing actions.
+
+- Ingestion & freshness
+  - Worker pulls Best Buy (optional Micro Center) and POSTs to `/api/ingest`.
+  - Ingest dedupes snapshots by time window (`INGEST_DEDUPE_MIN` minutes) and unique keys; Best Buy links may expire in ~7 days.
+
+- Analytics (lightweight)
+  - `/api/analytics` collects client events. Currently recorded: search submit, filters apply, watch create (pending/immediate), outbound click.
+
+- Theming
+  - Neutral UI with a single brand accent for primary CTAs; outline buttons for secondary actions.
+
+## Roadmap ideas
+
+- Full discount sorting backed by MSRP for all retailers
+- Geo distance filtering (ZIP → lat/lng) for radius searches
+- Robust alerting jobs (email/SMS/Discord) with an alerts ledger and per-user plan limits
+- Stripe-based billing (free vs pro) tied to email identity
+- Replace analytics stub with a provider (PostHog) or your own store
