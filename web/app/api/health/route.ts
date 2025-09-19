@@ -38,8 +38,9 @@ export async function GET() {
     // latest inventory timestamp
     const latest = await db.execute(sql`select max(seen_at) as seen from public.inventory`);
     latestSeenAt = latest?.rows?.[0]?.seen ? new Date(latest.rows[0].seen as any).toISOString() : null;
-    const cnt = await db.execute(sql`select count(*)::int as c from public.inventory`);
-    inventoryCount = cnt?.rows?.[0]?.c ?? null;
+    const cnt = await db.execute(sql`select count(*) as c from public.inventory`);
+    const cRow: any = cnt?.rows?.[0] ?? null;
+    inventoryCount = cRow && cRow.c != null ? Number(cRow.c) : null;
     // table/column presence checks
     const ph = await db.execute(sql`select to_regclass('public.price_history') as t`);
     hasPriceHistory = !!ph?.rows?.[0]?.t;
