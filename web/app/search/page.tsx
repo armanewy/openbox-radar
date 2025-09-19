@@ -93,7 +93,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
         <FilterDrawer>
           <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
         </FilterDrawer>
-        <div className="hidden md:block sticky top-3 border rounded-xl p-4 space-y-3 bg-white/70 backdrop-blur shadow-card">
+        <div className="hidden md:block sticky top-3 border border-gray-300 rounded-xl p-4 space-y-3 bg-white shadow">
           <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
         </div>
       </aside>

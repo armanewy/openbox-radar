@@ -102,7 +102,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const reduce = useReducedMotion();
 
   return (
-    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border border-gray-200 shadow-sm p-2.5 bg-white overflow-hidden">
+    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border border-gray-300 shadow p-2.5 bg-white overflow-hidden">
       <div className="flex gap-3">
         <div className="shrink-0 w-[72px]">
           {item.image_url ? (
@@ -138,7 +138,7 @@ export default function ItemCard({ item }: { item: Item }) {
           </button>
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2 text-[10px] text-gray-500">
+          <div className="flex items-center justify-between gap-2 text-[10px] text-gray-600">
             <div className="min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
               <span>{timeAgoShort(item.seen_at)}</span>
@@ -152,7 +152,7 @@ export default function ItemCard({ item }: { item: Item }) {
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
           </a>
-          <div className="mt-1 text-[11px] text-gray-600 truncate">
+          <div className="mt-1 text-[11px] text-gray-700 truncate">
             {item.sku ? <span className="mr-2">{item.sku}</span> : null}
             <span>
               {item.store?.name || item.store_id}
