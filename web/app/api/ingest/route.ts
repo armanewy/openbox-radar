@@ -40,7 +40,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const items = parsed.data.items;
+  // In production, defensively drop any obvious dev/stub items to avoid polluting prod data
+  const isProd = process.env.NODE_ENV === 'production';
+  const isDevLike = (it: z.infer<typeof Item>) => {
+    const titleLooksDev = /^\s*DEV\b/i.test(it.title);
+    const urlLooksDev = /example\.com/i.test(it.url);
+    const devStores = new Set(['bby-123', 'mc-cambridge']);
+    const storeLooksDev = devStores.has(it.storeId);
+    return titleLooksDev || urlLooksDev || storeLooksDev;
+  };
+
+  const rawItems = parsed.data.items;
+  const items = isProd ? rawItems.filter((it) => !isDevLike(it)) : rawItems;
+  const dropped = rawItems.length - items.length;
   if (items.length === 0) return NextResponse.json({ ok: true, inserted: 0 });
 
   const dedupeMinutes = Number(process.env.INGEST_DEDUPE_MIN || 60);
@@ -93,5 +105,5 @@ export async function POST(req: NextRequest) {
     inserted++;
   }
 
-  return NextResponse.json({ ok: true, inserted });
+  return NextResponse.json({ ok: true, inserted, dropped });
 }
