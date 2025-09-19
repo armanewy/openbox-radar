@@ -24,11 +24,13 @@ export async function GET(req: NextRequest) {
   await db.delete(inventory).where(and(eq(inventory.source, 'bestbuy' as any), lt(inventory.expires_at, new Date())));
 
   let checked = 0;
-  for (const w of ws) {
-    // DEV: stub items; later swap to real retailer adapters
-    const items = await fetchDevItems({ retailer: w.retailer as any, sku: w.sku });
-    for (const item of items) {
-      checked++;
+  const ENABLE_DEV_CRON = process.env.ENABLE_DEV_CRON === '1';
+  if (ENABLE_DEV_CRON) {
+    for (const w of ws) {
+      // DEV: stub items; later swap to real retailer adapters
+      const items = await fetchDevItems({ retailer: w.retailer as any, sku: w.sku });
+      for (const item of items) {
+        checked++;
 
       // Find last snapshot for same key
       const last = await db
@@ -85,7 +87,8 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // TODO: alerts table not implemented in schema
+        // TODO: alerts table not implemented in schema
+      }
     }
   }
 
@@ -98,7 +101,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, checked });
+  return NextResponse.json({ ok: true, checked, devCron: ENABLE_DEV_CRON });
 }
 
 function normalizeRank(label: string): 'certified'|'excellent'|'satisfactory'|'fair'|'unknown' {
