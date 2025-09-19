@@ -5,6 +5,7 @@ export default {
       { protocol: 'https', hostname: 'pisces.bbystatic.com' },
       { protocol: 'https', hostname: 'assets.bbystatic.com' },
       { protocol: 'https', hostname: 'images.bbystatic.com' },
+      { protocol: 'https', hostname: '**.microcenter.com' },
       // Add more as they appear in your data
     ],
   },

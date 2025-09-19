@@ -25,8 +25,17 @@ export function useOptimisticWatch() {
         body: JSON.stringify(payload),
       });
       if (r.ok) {
-        toast.success("Watch created");
-        return await r.json();
+        const data = await r.json();
+        if ((data as any).pending) {
+          toast.success("Check your email to confirm alerts");
+        } else {
+          toast.success("Watch created");
+        }
+        try {
+          const { track } = await import("@/lib/analytics");
+          track('watch_created', { pending: !!(data as any).pending, ...payload });
+        } catch {}
+        return data;
       }
       if (r.status === 401) {
         const err = await r.json().catch(() => ({}));

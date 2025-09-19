@@ -37,24 +37,23 @@ This document tracks the current state of the UI refactor and what remains.
 ## Remaining / Next
 
 - Home polish
-  - "How it works" 3-step row + trust line under the hero
-  - Optional: a second carousel (e.g., biggest price drops) when MSRP available
+  - Optional: a second carousel (e.g., biggest price drops) — Added using historical deltas
 - Search polish
-  - Sort by discount % (requires MSRP/regular price)
-  - "Save search" CTA that creates a watch for current filters
+  - Sort by discount % (requires MSRP/regular price) — UI gated to Best Buy only
+  - "Save search" CTA — Added (uses WatchSheet with derived defaults)
 - Cards
-  - Finalize badge sizes/visibility on xs; optionally hide retailer badge on very narrow cards
-  - Extend Next/Image remote patterns for Micro Center image hosts
+  - Badge sizes/visibility — Compacted badges; hide retailer badge on xs
+  - Next/Image — Added remotePatterns for **.microcenter.com
 - Motion & Accessibility
-  - Framer Motion micro-interactions with `useReducedMotion` guard
+  - Added hover/tap micro-interactions (guarded by `useReducedMotion`)
 - shadcn/ui coverage
-  - Convert Sort menu to `DropdownMenu`; add Dialogs where helpful (share/details)
+  - Sort menu converted to `DropdownMenu`
 - Analytics (lightweight)
-  - Track search submits, filter toggles, watch created, outbound retailer clicks
+  - Added `/api/analytics` endpoint + client `track()`
+  - Instrumented: search submits, filter apply, watch created, outbound click
 - Billing (outside UI scope but related)
   - Stripe customer keyed by email; Checkout + Portal linked from settings
 
 ## DB Migration Applied
 
 - `0023_watches_verified.sql` — adds `watches.verified boolean` with index
-

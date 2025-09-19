@@ -9,6 +9,7 @@ export default function SearchHero() {
   const [q, setQ] = useState("");
   const [retailer, setRetailer] = useState("");
   const [minCondition, setMinCondition] = useState("");
+  const { track } = require("@/lib/analytics");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -16,6 +17,7 @@ export default function SearchHero() {
     if (q) u.set("q", q);
     if (retailer) u.set("retailer", retailer);
     if (minCondition) u.set("min_condition", minCondition);
+    track('search_submit', { q, retailer, minCondition });
     router.push(`/search?${u.toString()}`);
   }
 

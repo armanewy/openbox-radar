@@ -12,10 +12,14 @@ type Props = {
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 export default function SearchFiltersForm({ q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles }: Props) {
+  function onSubmit() {
+    track('filters_apply', { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles });
+  }
   return (
-    <form method="GET" className="space-y-3">
+    <form method="GET" className="space-y-3" onSubmit={onSubmit}>
       <div>
         <label className="block text-sm text-gray-600">Search</label>
         <Input name="q" defaultValue={q} placeholder="Title or SKU" />

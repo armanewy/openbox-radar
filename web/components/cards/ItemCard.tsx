@@ -7,6 +7,8 @@ import PriceSparkline from "@/components/cards/PriceSparkline";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { m, useReducedMotion } from "framer-motion";
+import { track } from "@/lib/analytics";
 
 export type Item = {
   id: number;
@@ -82,9 +84,10 @@ export default function ItemCard({ item }: { item: Item }) {
     } catch {}
   }, [item.url]);
   const [open, setOpen] = useState(false);
+  const reduce = useReducedMotion();
 
   return (
-    <li className="rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden transition-transform hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]">
+    <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border shadow-card p-2.5 bg-white/60 backdrop-blur overflow-hidden">
       <div className="flex gap-3">
         <div className="shrink-0 w-[72px]">
           {item.image_url ? (
@@ -124,7 +127,7 @@ export default function ItemCard({ item }: { item: Item }) {
             <div className="min-w-0 flex items-center gap-1.5 overflow-hidden whitespace-nowrap">
               <span className={`inline-block w-2 h-2 rounded-full ${stalenessColor(item.seen_at)}`} />
               <span>{timeAgoShort(item.seen_at)}</span>
-              <Badge className="whitespace-nowrap px-1 py-0.5 text-[10px]">{item.retailer}</Badge>
+              <Badge className="whitespace-nowrap px-1 py-0.5 text-[10px] hidden sm:inline-flex">{item.retailer}</Badge>
               <Badge variant="success" className="whitespace-nowrap px-1 py-0.5 text-[10px]">{conditionShortLabel(item.condition_rank)}</Badge>
             </div>
             <span className="shrink-0 inline-block rounded-md bg-black text-white text-xs font-semibold px-2 py-1 shadow">
@@ -141,7 +144,7 @@ export default function ItemCard({ item }: { item: Item }) {
           <div className="mt-2 flex items-center justify-end gap-1">
             <div className="text-right shrink-0">
               <div className="mt-1 flex items-center gap-1 flex-wrap sm:flex-nowrap justify-end">
-                <a href={item.url} target="_blank" rel="noopener noreferrer nofollow">
+                <a href={item.url} target="_blank" rel="noopener noreferrer nofollow" onClick={() => track('outbound_click', { retailer: item.retailer, sku: item.sku, url: item.url, id: item.id })}>
                   <Button variant="outline" size="sm" className="inline-flex gap-1">
                     <ExternalLink size={14} />
                     <span className="hidden sm:inline">View</span>
@@ -162,6 +165,6 @@ export default function ItemCard({ item }: { item: Item }) {
         onOpenChange={setOpen}
         defaults={{ retailer: item.retailer as any, sku: item.sku ?? undefined }}
       />
-    </li>
+    </m.li>
   );
 }

@@ -39,6 +39,13 @@ export default function Page() {
       .then((d) => setTrending(d.items || []))
       .catch(() => {});
   }, []);
+  const [drops, setDrops] = useState<Array<any>>([]);
+  useEffect(() => {
+    fetch('/api/inventory/trending?limit=8&type=drops')
+      .then((r) => r.json())
+      .then((d) => setDrops(d.items || []))
+      .catch(() => {});
+  }, []);
 
   return (
     <main className="container mx-auto max-w-7xl p-6 space-y-10">
@@ -61,6 +68,15 @@ export default function Page() {
           <Carousel items={trending} />
         )}
         {trending.some((it: any) => it.retailer === 'bestbuy') ? <BestBuyAttribution /> : null}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Biggest recent drops</h2>
+        {drops.length === 0 ? (
+          <p className="text-gray-600">Price drop data appears once multiple snapshots exist.</p>
+        ) : (
+          <Carousel items={drops} />
+        )}
       </section>
 
       <a href="/app" className="inline-block mt-2 underline">Go to app</a>
