@@ -5,8 +5,12 @@ compatibility_date = "2024-11-01"
 [triggers]
 crons = ["*/10 * * * *"]
 
+[observability.logs]
+enabled = true
+
 [vars]
 CRON_SHARED_SECRET = "JB0uSHbUchIJ8iYpWKPQTk3Lqzcl332o4HWZNNKgKbzoXlS4dvy6bgZd+3bRymU4"
+
 # Point to your local Next dev server ingest endpoint
 # If your Next runs on :3001, change to http://localhost:3001/api/ingest
 INGEST_URL = "http://localhost:3000/api/ingest"
