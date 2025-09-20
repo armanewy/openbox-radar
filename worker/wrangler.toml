@@ -14,8 +14,14 @@ enabled = true
 # Point to your local Next dev server ingest endpoint
 # If your Next runs on :3001, change to http://localhost:3001/api/ingest
 INGEST_URL = "https://openboxradar.com/api/ingest"
-USE_REAL_MICROCENTER = "1"
+ENABLE_MC_STORE_SCRAPE = "1"
+ENABLE_BB_STORE_SCRAPE = "1"
+PLAYWRIGHT_HEADLESS = "1"
+MICROCENTER_RATE_LIMIT_MS = "1000"
+BESTBUY_RATE_LIMIT_MS = "900"
 MICROCENTER_STORE_IDS = "mc-cambridge"
+BESTBUY_STORE_IDS = "bby-123"
+USE_REAL_MICROCENTER = "1"
 USE_REAL_BESTBUY = "1"
 USE_REAL_NEWEGG = "0"
 ALLOW_DEV_STUBS = "0"

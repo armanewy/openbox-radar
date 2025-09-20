@@ -14,6 +14,12 @@ const Item = z.object({
   url: z.string().url(),
   seenAt: z.string().datetime().optional(),
   imageUrl: z.string().url().optional(),
+  source: z.string().min(1).optional(),
+  channel: z.enum(['store','online']).optional(),
+  confidence: z.enum(['api','scrape','heuristic']).optional(),
+  storeName: z.string().optional(),
+  storeCity: z.string().optional(),
+  storeState: z.string().optional(),
 });
 
 const Payload = z.object({ items: z.array(Item).max(1000) });
@@ -88,6 +94,9 @@ export async function POST(req: NextRequest) {
       url: it.url,
       seen_at: seenAt,
       image_url: it.imageUrl ?? null,
+      source: it.source ?? `${it.retailer}-${it.storeId}`,
+      channel: (it.channel ?? 'store') as any,
+      confidence: (it.confidence ?? 'scrape') as any,
     }).onConflictDoNothing();
     // Append to price history (best effort)
     try {
