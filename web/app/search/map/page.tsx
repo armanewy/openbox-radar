@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { absoluteUrl } from "@/lib/utils/url";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import StoreMap from "@/components/StoreMap";
@@ -41,7 +40,7 @@ export default function MapView() {
   async function fetchItems(params: URLSearchParams) {
     setLoading(true);
     try {
-      const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + params.toString(), { cache: 'no-store' });
+      const res = await fetch('/api/inventory/search?' + params.toString(), { cache: 'no-store' });
       const data = (await res.json()) as { items: Item[] };
       setItems(data.items || []);
     } finally {
