@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const isDevLike = (it: z.infer<typeof Item>) => {
     const titleLooksDev = /^\s*DEV\b/i.test(it.title);
     const urlLooksDev = /example\.com/i.test(it.url);
-    const devStores = new Set(['bby-123', 'mc-cambridge', 'newegg-online']);
+    const devStores = new Set(['bby-123', 'mc-cambridge', 'newegg-stub']);
     const storeLooksDev = devStores.has(it.storeId);
     return titleLooksDev || urlLooksDev || storeLooksDev;
   };
