@@ -33,3 +33,9 @@ BESTBUY_PAGE_SIZE = "30"
 ENABLE_ALERTS = "1"
 ALERTS_BATCH_SIZE = "500"
 # RESEND_API_KEY may be provided as a secret if sending from worker
+
+# Best Buy store enrichment
+ENABLE_BB_ENRICHMENT = "0"
+BB_ENRICHMENT_TTL_MIN = "30"
+BB_ENRICHMENT_FAIL_TTL_MIN = "10"
+BB_MAX_ENRICH_RPS = "2"

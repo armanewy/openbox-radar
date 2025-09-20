@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, serial, integer, timestamp, boolean, customType } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, serial, integer, timestamp, boolean, customType, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
@@ -137,3 +137,14 @@ export const deal_votes = pgTable('deal_votes', {
 });
 
 export type DealVote = typeof deal_votes.$inferSelect;
+
+export const bb_store_availability = pgTable('bb_store_availability', {
+  id: serial('id').primaryKey(),
+  sku: text('sku').notNull(),
+  zip: text('zip').notNull(),
+  stores: jsonb('stores').$type<Record<string, unknown>[]>().notNull(),
+  refreshed_at: timestamp('refreshed_at', { withTimezone: true }).notNull().defaultNow(),
+  failed: boolean('failed').notNull().default(false),
+});
+
+export type BestBuyStoreAvailability = typeof bb_store_availability.$inferSelect;

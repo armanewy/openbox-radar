@@ -355,7 +355,7 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
 
 ## 0) Flags & env
 
-* [ ] **web/.env.example**
+* [x] **web/.env.example**
 
   ```
   # enrichment toggles
@@ -367,7 +367,7 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
   # optional if sending mail from worker instead of web
   RESEND_API_KEY=
   ```
-* [ ] **worker/wrangler.toml**
+* [x] **worker/wrangler.toml**
 
   ```toml
   [vars]
@@ -382,7 +382,7 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
 
 ## 1) DB schema
 
-* [ ] **Add enrichment cache table**
+* [x] **Add enrichment cache table**
   `web/lib/drizzle/migrations/0028_bb_store_availability.sql`
 
   ```sql

@@ -5,7 +5,7 @@ Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑bo
 ## Repo layout
 - `web/` — Next.js app (app router)
   - Drizzle ORM + Postgres (Supabase‑friendly)
-  - API routes: `ingest`, `inventory/search`, `inventory/history`, `inventory/trending`, `watches`, `alerts/*`, `auth/*`, `analytics`, `deal-votes`
+  - API routes: `ingest`, `inventory/search`, `inventory/history`, `inventory/trending`, `watches`, `alerts/*`, `auth/*`, `analytics`, `deal-votes`, `bestbuy/enrichment`
   - UI: landing hero with Hot Now + Near You, search with sticky filters, Sort (Dropdown incl. Upvoted), Save search, infinite scroll, trending + drops, price history drawer
 - `worker/` — Cloudflare Worker
   - Schedules pulls from Best Buy (API) and Micro Center (DOM, optional)
@@ -101,6 +101,7 @@ Web (`web/.env`)
 - `CRON_SECRET` — shared secret for `/api/ingest`
 - Email (optional for magic links): `RESEND_API_KEY` or your provider
 - UI: `NEXT_PUBLIC_BESTBUY_ATTRIB_DISABLED=1` hides Best Buy attribution
+- Enrichment: `BESTBUY_ENRICHMENT_ENABLED`, `BESTBUY_ENRICHMENT_TTL_MIN`, `BESTBUY_ENRICHMENT_FAIL_TTL_MIN`, `BESTBUY_MAX_ENRICH_RPS`
 
 Worker (`worker/wrangler.toml` / secrets)
 - `CRON_SHARED_SECRET` — must equal web `CRON_SECRET`
@@ -109,6 +110,7 @@ Worker (`worker/wrangler.toml` / secrets)
 - `BESTBUY_API_KEY` — Worker secret
 - Source selection: `BESTBUY_SKUS` or `BESTBUY_CATEGORY` (with `BESTBUY_PAGE_SIZE`)
 - `USE_REAL_MICROCENTER` — optional, `1` to scrape DOM
+- `ENABLE_BB_ENRICHMENT`, `BB_ENRICHMENT_TTL_MIN`, `BB_ENRICHMENT_FAIL_TTL_MIN`, `BB_MAX_ENRICH_RPS`
 
 ## Data model (Drizzle)
 
