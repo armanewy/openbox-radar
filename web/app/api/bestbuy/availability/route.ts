@@ -16,9 +16,18 @@ function ttlConfig() {
 }
 
 async function getCache(sku: string, zip: string) {
-  return db.query.bb_store_availability.findFirst({
-    where: and(eq(bb_store_availability.sku, sku), eq(bb_store_availability.zip, zip)),
-  });
+  try {
+    return await db.query.bb_store_availability.findFirst({
+      where: and(eq(bb_store_availability.sku, sku), eq(bb_store_availability.zip, zip)),
+    });
+  } catch (err: any) {
+    const code = err?.code || err?.cause?.code;
+    if (code === '42P01') {
+      console.warn('[bb availability] cache table missing: run migration 0028_bb_store_availability.sql');
+      return null;
+    }
+    throw err;
+  }
 }
 
 async function triggerEnrichment(sku: string, zip: string) {
@@ -72,4 +81,3 @@ export async function GET(req: NextRequest) {
     queued,
   });
 }
-

@@ -123,11 +123,13 @@ export default function ItemCard({ item }: { item: Item }) {
     setAvailabilityLoading(true);
     try {
       const res = await fetch(`/api/bestbuy/availability?sku=${encodeURIComponent(item.sku)}&zip=${encodeURIComponent(storedZip)}`);
-      const data = await res.json();
-      if (!res.ok || data?.error) {
-        throw new Error(data?.error || 'Could not check availability');
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json() : await res.text();
+      if (!res.ok || (data && typeof data === 'object' && 'error' in data)) {
+        const message = typeof data === 'object' && data?.error ? data.error : 'Could not check availability';
+        throw new Error(message);
       }
-      setAvailability(data);
+      setAvailability(data as any);
     } catch (err: any) {
       setAvailabilityError(err?.message || 'Failed to check availability');
     } finally {
