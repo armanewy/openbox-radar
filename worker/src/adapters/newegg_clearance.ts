@@ -2,6 +2,7 @@ import { parseHTML } from 'linkedom';
 import type { NormalizedItem } from './types';
 
 const STORE_ID = 'newegg-online';
+const STUB_STORE_ID = 'newegg-stub';
 const LISTING_URL = 'https://www.newegg.com/d/Open-Box?PageSize=96';
 const USER_AGENT = 'Mozilla/5.0 (compatible; OpenboxRadar/0.4; +https://openboxradar.com)';
 
@@ -44,7 +45,7 @@ function parseSkuFromUrl(raw: string): string | null {
 
 export async function fetchNeweggClearance(useReal: boolean): Promise<{ storeId: string; items: NormalizedItem[] }> {
   if (!useReal) {
-    return { storeId: STORE_ID, items: [] };
+    return { storeId: STUB_STORE_ID, items: [] };
   }
 
   const now = new Date().toISOString();

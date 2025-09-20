@@ -28,7 +28,7 @@ async function main() {
     },
     {
       retailer: 'newegg',
-      storeId: 'newegg-online',
+      storeId: 'newegg-stub',
       sku: 'DEV-NE-001',
       title: 'DEV Newegg Open-Box GPU',
       conditionLabel: 'Open-Box',
