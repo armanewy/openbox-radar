@@ -84,22 +84,75 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
       next: { revalidate: 0 },
     });
 
+    const contentType = res.headers.get("content-type") ?? "";
+    const normalizedType = contentType.toLowerCase();
+    const bodyText = await res.text();
+    const bodyTrimmed = bodyText.trim();
+
     if (!res.ok) {
-      throw new Error(`Search request failed with status ${res.status}`);
+      let detail = "";
+
+      if (bodyTrimmed.length) {
+        if (normalizedType.includes("application/json")) {
+          try {
+            const parsed = JSON.parse(bodyTrimmed);
+            if (parsed && typeof parsed === "object") {
+              const maybeError = (parsed as { error?: unknown }).error;
+              if (typeof maybeError === "string" && maybeError.trim().length) {
+                detail = maybeError.trim();
+              }
+            }
+          } catch {
+            // ignore JSON parse failures for error payloads
+          }
+        }
+
+        if (!detail) {
+          detail = bodyTrimmed.slice(0, 200);
+        }
+      }
+
+      const statusMessage = `Search request failed with status ${res.status}`;
+      throw new Error(detail.length ? `${statusMessage}: ${detail}` : statusMessage);
     }
 
-    const contentType = res.headers.get("content-type");
-    if (!contentType?.toLowerCase().includes("application/json")) {
+    if (!bodyTrimmed.length) {
+      data = { items: [], nextCursor: null };
+    } else if (!normalizedType.includes("application/json")) {
       throw new Error("Search response was not valid JSON");
-    }
+    } else {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(bodyText) as { items?: unknown; nextCursor?: unknown };
+      } catch {
+        throw new Error("Search response could not be parsed as JSON");
+      }
 
-    data = (await res.json()) as { items: Item[]; nextCursor?: string | null };
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("Search response was not structured as expected");
+      }
+
+      const items = Array.isArray((parsed as { items?: unknown }).items)
+        ? ((parsed as { items?: unknown }).items as Item[])
+        : [];
+      const nextCursorValue = (parsed as { nextCursor?: unknown }).nextCursor;
+      const nextCursor = typeof nextCursorValue === "string" || nextCursorValue == null
+        ? (nextCursorValue ?? null)
+        : null;
+
+      data = { items, nextCursor };
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Failed to load search results", error);
     const fallbackMessage = "We couldn't load the latest listings. Please try again.";
-    errorMessage = error instanceof Error && error.message.length
-      ? `${fallbackMessage} (${error.message})`
-      : fallbackMessage;
+    if (error instanceof Error && error.message.length) {
+      const trimmed = error.message.trim();
+      errorMessage = trimmed.length && trimmed !== fallbackMessage
+        ? `${fallbackMessage} (${trimmed})`
+        : fallbackMessage;
+    } else {
+      errorMessage = fallbackMessage;
+    }
   }
 
   const q = typeof searchParams.q === "string" ? searchParams.q : "";
