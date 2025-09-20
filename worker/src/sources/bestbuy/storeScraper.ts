@@ -1,35 +1,8 @@
+import { parseHTML } from 'linkedom';
 import { withRateLimit } from '../../util/rate';
 import type { IngestPayload } from '../../ingest';
 import type { StoreConfig } from '../types';
 import type { StoreScrapeResult } from '../result';
-
-type Browser = {
-  newContext(options?: any): Promise<BrowserContext>;
-  close(): Promise<void>;
-};
-
-type BrowserContext = {
-  newPage(): Promise<Page>;
-  close(): Promise<void>;
-};
-
-type Page = {
-  goto(url: string, options?: Record<string, any>): Promise<void>;
-  $$(selector: string): Promise<any[]>;
-  close(): Promise<void>;
-};
-
-async function loadChromium() {
-  try {
-    const mod: any = await import('playwright-core');
-    if (mod?.chromium?.launch) return mod.chromium;
-  } catch (err) {
-    console.warn('[bestbuy] playwright-core not available', err);
-  }
-  throw new Error(
-    'playwright-core is required to scrape Best Buy store pages. Install it in the worker package before enabling this source.'
-  );
-}
 
 function toStoreMeta(store: StoreConfig) {
   return {
@@ -51,37 +24,6 @@ function parsePriceToCents(text: string): number | null {
   return Math.round(parseFloat(match[1]) * 100);
 }
 
-async function ensureBrowser(headless: boolean): Promise<Browser> {
-  const chromium = await loadChromium();
-  return chromium.launch({ headless });
-}
-
-async function textFrom(card: any, selectors: string[]): Promise<string> {
-  for (const sel of selectors) {
-    try {
-      const handle = await card.$(sel);
-      if (!handle) continue;
-      const text = (await handle.textContent())?.replace(/\s+/g, ' ').trim();
-      await handle.dispose();
-      if (text) return text;
-    } catch {}
-  }
-  return '';
-}
-
-async function attrFrom(card: any, selectors: string[], attr: string): Promise<string> {
-  for (const sel of selectors) {
-    try {
-      const handle = await card.$(sel);
-      if (!handle) continue;
-      const value = await handle.getAttribute(attr);
-      await handle.dispose();
-      if (value && value.trim()) return value.trim();
-    } catch {}
-  }
-  return '';
-}
-
 function resolveUrl(href: string, base: string): string | null {
   if (!href) return null;
   try {
@@ -91,8 +33,44 @@ function resolveUrl(href: string, base: string): string | null {
   }
 }
 
+function textFrom(card: any, selectors: string[]): string {
+  for (const sel of selectors) {
+    const target = card.querySelector(sel);
+    if (!target) continue;
+    const text = target.textContent?.replace(/\s+/g, ' ').trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function attrFrom(card: any, selectors: string[], attr: string): string {
+  for (const sel of selectors) {
+    const target = card.querySelector(sel);
+    if (!target) continue;
+    const value = target.getAttribute(attr)?.trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+async function loadStoreDocument(url: string) {
+  const res = await fetch(url, {
+    headers: {
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'accept-language': 'en-US,en;q=0.9',
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to load Best Buy store page: ${res.status} ${res.statusText}`);
+  }
+  const html = await res.text();
+  const { document } = parseHTML(html);
+  return document;
+}
+
 export type BestBuyScrapeOptions = {
-  headless?: boolean;
   rateLimitMs?: number;
 };
 
@@ -104,61 +82,54 @@ export async function scrapeBestBuyStores(
     return { items: [], metrics: [] };
   }
 
-  const headless = options.headless !== false;
   const rateLimit = options.rateLimitMs ?? 900;
-  const browser = await ensureBrowser(headless);
-  const context = await browser.newContext();
-  const page = await context.newPage();
 
   const items: IngestPayload[] = [];
   const metrics: StoreScrapeResult['metrics'] = [];
   const seen = new Set<string>();
 
-  try {
-    for (const store of stores) {
-      const before = items.length;
-      const meta = toStoreMeta(store);
-      await withRateLimit(async () => {
-        await page.goto(store.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-        const cards = await page.$$('.sku-item, article.sku-item, li.sku-item, article');
-        for (const card of cards) {
-          const skuAttr = await attrFrom(card, ['[data-sku-id]'], 'data-sku-id');
-          const title = await textFrom(card, ['.sku-header a', '.sku-title a', '.sku-title', 'h4 a', 'h4']);
-          if (!title) continue;
-          const priceText = await textFrom(card, ['.priceView-customer-price', '.priceView-hero-price span', '.price']);
-          const priceCents = parsePriceToCents(priceText || '');
-          if (!priceCents) continue;
+  for (const store of stores) {
+    const before = items.length;
+    const meta = toStoreMeta(store);
+    await withRateLimit(async () => {
+      const document = await loadStoreDocument(store.url);
+      const cards = Array.from(
+        document.querySelectorAll('.sku-item, article.sku-item, li.sku-item, [data-sku-id]'),
+      );
+      for (const raw of cards) {
+        const card = raw as any;
+        const skuAttr = attrFrom(card, ['[data-sku-id]'], 'data-sku-id');
+        const title = textFrom(card, ['.sku-header a', '.sku-title a', '.sku-title', 'h4 a', 'h4']);
+        if (!title) continue;
+        const priceText = textFrom(card, ['.priceView-customer-price', '.priceView-hero-price span', '.price']);
+        const priceCents = parsePriceToCents(priceText || '');
+        if (!priceCents) continue;
 
-          const href = await attrFrom(card, ['.sku-header a', '.sku-title a', 'a[href]'], 'href');
-          const resolvedUrl = resolveUrl(href, store.url) || store.url;
-          const image =
-            (await attrFrom(card, ['img'], 'data-src')) ||
-            (await attrFrom(card, ['img'], 'data-original')) ||
-            (await attrFrom(card, ['img'], 'src'));
+        const href = attrFrom(card, ['.sku-header a', '.sku-title a', 'a[href]'], 'href');
+        const resolvedUrl = resolveUrl(href, store.url) || store.url;
+        const image =
+          attrFrom(card, ['img'], 'data-src') ||
+          attrFrom(card, ['img'], 'data-original') ||
+          attrFrom(card, ['img'], 'src');
 
-          const key = skuAttr ? `${meta.storeId}:${skuAttr}` : `${meta.storeId}:${resolvedUrl}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+        const key = skuAttr ? `${meta.storeId}:${skuAttr}` : `${meta.storeId}:${resolvedUrl}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
 
-          items.push({
-            ...meta,
-            sku: skuAttr || undefined,
-            title,
-            priceCents,
-            conditionLabel: 'Open-Box',
-            url: resolvedUrl,
-            seenAt: new Date().toISOString(),
-            imageUrl: image,
-          });
-        }
-      }, rateLimit);
+        items.push({
+          ...meta,
+          sku: skuAttr || undefined,
+          title,
+          priceCents,
+          conditionLabel: 'Open-Box',
+          url: resolvedUrl,
+          seenAt: new Date().toISOString(),
+          imageUrl: image,
+        });
+      }
+    }, rateLimit);
 
-      metrics.push({ storeId: store.id, count: items.length - before, url: store.url });
-    }
-  } finally {
-    await page.close();
-    await context.close();
-    await browser.close();
+    metrics.push({ storeId: store.id, count: items.length - before, url: store.url });
   }
 
   return { items, metrics };
