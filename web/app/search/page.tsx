@@ -74,12 +74,33 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   }
   if (!qp.has("limit")) qp.set("limit", "20");
 
-  const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
-    cache: "no-store",
-    // Ensure server fetch regardless of deployment
-    next: { revalidate: 0 },
-  });
-  const data = (await res.json()) as { items: Item[]; nextCursor?: string | null };
+  let data: { items: Item[]; nextCursor?: string | null } = { items: [], nextCursor: null };
+  let errorMessage: string | null = null;
+
+  try {
+    const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
+      cache: "no-store",
+      // Ensure server fetch regardless of deployment
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Search request failed with status ${res.status}`);
+    }
+
+    const contentType = res.headers.get("content-type");
+    if (!contentType?.toLowerCase().includes("application/json")) {
+      throw new Error("Search response was not valid JSON");
+    }
+
+    data = (await res.json()) as { items: Item[]; nextCursor?: string | null };
+  } catch (error) {
+    console.error(error);
+    const fallbackMessage = "We couldn't load the latest listings. Please try again.";
+    errorMessage = error instanceof Error && error.message.length
+      ? `${fallbackMessage} (${error.message})`
+      : fallbackMessage;
+  }
 
   const q = typeof searchParams.q === "string" ? searchParams.q : "";
   const retailer = typeof searchParams.retailer === "string" ? searchParams.retailer : "";
@@ -91,6 +112,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const radius_miles = typeof searchParams.radius_miles === "string" ? searchParams.radius_miles : "";
 
   const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles };
+
+  const showEmptyState = !errorMessage && data.items.length === 0;
 
   const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
@@ -125,7 +148,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
         </div>
         <FilterChips />
 
-        {data.items.length === 0 && (
+        {errorMessage ? (
+          <div className="text-gray-700 border rounded-xl p-6 bg-white/60">
+            <div className="font-semibold mb-1">Unable to load results</div>
+            <p className="text-sm">{errorMessage}</p>
+          </div>
+        ) : null}
+
+        {showEmptyState && (
           <div className="text-gray-700 border rounded-xl p-6 bg-white/60">
             <div className="font-semibold mb-1">No results</div>
             <p className="text-sm mb-3">Try clearing filters or using broader keywords.</p>
@@ -137,14 +167,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           </div>
         )}
 
-        <InfiniteList
-          fetchUrl={absoluteUrl('/api/inventory/search')}
-          baseParams={baseParams}
-          initialItems={data.items}
-          initialNextCursor={data.nextCursor}
-        />
+        {!errorMessage ? (
+          <InfiniteList
+            fetchUrl={absoluteUrl('/api/inventory/search')}
+            baseParams={baseParams}
+            initialItems={data.items}
+            initialNextCursor={data.nextCursor}
+          />
+        ) : null}
 
-        {hasBestBuy ? <BestBuyAttribution /> : null}
+        {!errorMessage && hasBestBuy ? <BestBuyAttribution /> : null}
       </section>
     </main>
   );
