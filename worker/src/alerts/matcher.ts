@@ -12,6 +12,28 @@ function baseUrlFromIngest(ingestUrl: string): string {
   }
 }
 
+function getWorkerBase(env: any) {
+  const url = env.INGEST_URL ? new URL(env.INGEST_URL) : null;
+  if (!url) return '';
+  url.pathname = '/';
+  url.search = '';
+  url.hash = '';
+  return url.toString().replace(/\/$/, '');
+}
+
+async function fetchBestBuyAvailability(env: any, sku: string, zip: string) {
+  if (env.ENABLE_BB_ENRICHMENT !== '1') return null;
+  const base = getWorkerBase(env);
+  if (!base) return null;
+  try {
+    const res = await fetch(`${base}/api/bestbuy/availability?sku=${encodeURIComponent(sku)}&zip=${encodeURIComponent(zip)}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function findMatches(env: any): Promise<Match[]> {
   const base = baseUrlFromIngest(env.INGEST_URL || '');
   if (!base) return [];
@@ -25,8 +47,21 @@ export async function findMatches(env: any): Promise<Match[]> {
     const m = await fetch(`${base}/api/alerts/match?watch_id=${encodeURIComponent(w.id)}&limit=5`, { headers: { authorization: auth } });
     if (!m.ok) continue;
     const matches = (await m.json())?.items || [];
-    if (matches.length) {
-      const ids = matches.map((x: any) => x.id);
+    let filtered = matches;
+    if ((w.retailer as string)?.toLowerCase() === 'bestbuy' && w.zipcode) {
+      const sku = w.sku;
+      if (sku) {
+        const enrich = await fetchBestBuyAvailability(env, sku, w.zipcode);
+        const stores = Array.isArray(enrich?.stores) ? enrich.stores : [];
+        const radius = Number(w.radius_miles || 0);
+        if (stores.length && radius > 0) {
+          const hasLocal = stores.some((s: any) => s?.hasOpenBox);
+          if (!hasLocal) filtered = [];
+        }
+      }
+    }
+    if (filtered.length) {
+      const ids = filtered.map((x: any) => x.id);
       await fetch(`${base}/api/alerts/notify`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: auth },

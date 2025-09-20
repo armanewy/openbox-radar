@@ -25,6 +25,10 @@ export type Item = {
   image_url: string | null;
   seen_at: string;
   distance_miles?: number | null;
+  enrichment?: {
+    status: 'online' | 'verifying' | 'local';
+    refreshed_at?: string | null;
+  };
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
 
@@ -149,6 +153,17 @@ export default function ItemCard({ item }: { item: Item }) {
               {dollars(item.price_cents)}
             </span>
           </div>
+          {item.enrichment?.status && (
+            <div className="mt-1 text-[11px]">
+              {item.enrichment.status === 'local' ? (
+                <Badge variant="success" className="text-[10px]">Local availability verified</Badge>
+              ) : item.enrichment.status === 'verifying' ? (
+                <span className="text-gray-500">Checking local availability…</span>
+              ) : (
+                <span className="text-gray-500">Online only</span>
+              )}
+            </div>
+          )}
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
             {item.title}
           </a>
