@@ -15,6 +15,9 @@ type Item = {
   price_cents: number;
   url: string;
   distance_miles?: number | null;
+  image_url?: string | null;
+  store_lat?: number | null;
+  store_lng?: number | null;
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
 
@@ -100,7 +103,7 @@ export default function MapView() {
   const pins = stores
     .map((s) => {
       // find any item with coords
-      const found = s.items.find((it) => (it as any).store_lat != null && (it as any).store_lng != null) as any;
+      const found = s.items.find((it) => it.store_lat != null && it.store_lng != null) as Item | undefined;
       if (!found) return null;
       return {
         id: `${s.retailer}:${s.storeId}`,
@@ -160,11 +163,11 @@ export default function MapView() {
                   <a key={it.id} href={it.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 truncate">
                     <div className="h-10 w-10 bg-white border rounded flex items-center justify-center overflow-hidden">
                       {/* Prefer Next/Image for Best Buy CDN */}
-                      {it.url.includes('bestbuy.com') && it['image_url'] ? (
-                        <Image src={(it as any).image_url} alt={it.title} width={40} height={40} className="object-contain h-10 w-10" />
+                      {it.url.includes('bestbuy.com') && it.image_url ? (
+                        <Image src={it.image_url} alt={it.title} width={40} height={40} className="object-contain h-10 w-10" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={(it as any).image_url || '/favicon.ico'} alt="" className="object-contain h-10 w-10" />
+                        <img src={it.image_url || '/favicon.ico'} alt="" className="object-contain h-10 w-10" />
                       )}
                     </div>
                     <div className="min-w-0 text-sm">
