@@ -13,6 +13,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const s = getSession();
   return (
     <html lang="en">
+       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0f9d58" />
+      </head>
       <body className="bg-gradient-to-b from-white to-gray-50 text-gray-800">
         <header className="border-b bg-white/80 backdrop-blur">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
