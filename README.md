@@ -45,6 +45,13 @@ pnpm install
 pnpm dev   # http://127.0.0.1:8787
 ```
 
+> Store scrapers rely on Playwright. Install `playwright-core` alongside the worker package when enabling them:
+>
+> ```bash
+> cd worker
+> pnpm add playwright-core
+> ```
+
 5) Configure Worker for real Best Buy data
    - In `worker/wrangler.toml` set:
      - `USE_REAL_BESTBUY = "1"`
@@ -94,6 +101,10 @@ Worker (`worker/wrangler.toml` / secrets)
 - Source selection: `BESTBUY_SKUS` or `BESTBUY_CATEGORY` (with `BESTBUY_PAGE_SIZE`)
 - `USE_REAL_MICROCENTER` — optional, `1` to scrape DOM
 - `MICROCENTER_STORE_IDS` — comma list of store ids (e.g. `mc-cambridge,mc-brooklyn`)
+- `ENABLE_MC_STORE_SCRAPE`, `ENABLE_BB_STORE_SCRAPE` — toggle Playwright store scrapers (requires `playwright-core` in `worker`)
+- `PLAYWRIGHT_HEADLESS` — set to `0` for headed debugging of Playwright runs
+- `MICROCENTER_RATE_LIMIT_MS`, `BESTBUY_RATE_LIMIT_MS` — delay between store page fetches
+- `BESTBUY_STORE_IDS` — comma list of Best Buy store identifiers (`bby-123@https://...` to override URLs)
 - `USE_REAL_NEWEGG` — `1` to scrape Newegg open-box listings
 - `ENABLE_BB_ENRICHMENT`, `BB_ENRICHMENT_TTL_MIN`, `BB_ENRICHMENT_FAIL_TTL_MIN`, `BB_MAX_ENRICH_RPS`
 
