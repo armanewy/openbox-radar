@@ -402,7 +402,7 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
 
 ## 2) Worker enrichment module
 
-* [ ] **Adapter**: `worker/src/enrichers/bestbuy_store_availability.ts`
+* [x] **Adapter**: `worker/src/enrichers/bestbuy_store_availability.ts`
 
   * `export async function checkStoresForSKU({ sku, zip }: {sku:string; zip:string})`
 
@@ -414,14 +414,14 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
     * **Cache** success for `BB_ENRICHMENT_TTL_MIN` and failures for `BB_ENRICHMENT_FAIL_TTL_MIN`.
   * **Write-through cache** to `bb_store_availability` with upsert on `(sku, zip)`.
 
-* [ ] **Scheduler endpoints**: extend `worker/src/index.ts`
+* [x] **Scheduler endpoints**: extend `worker/src/index.ts`
 
   * `POST /enrich/bb` (requires `x-cron-secret`) body: `{ sku, zip }` → triggers single enrichment; returns cached or fresh.
   * Add CRON task `@every 10m` (prod) that **re-enriches hot SKUs**: those with active watches in the last hour.
 
 ## 3) Web API surface
 
-* [ ] **Resolve endpoint**: `web/app/api/bestbuy/availability/route.ts`
+* [x] **Resolve endpoint**: `web/app/api/bestbuy/availability/route.ts`
 
   * `GET ?sku=...&zip=...`
   * Checks local DB cache (`bb_store_availability`); if stale **and** `BESTBUY_ENRICHMENT_ENABLED=1`, call worker `POST /enrich/bb` with `x-cron-secret`, then return the fresh doc.
@@ -440,7 +440,7 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
 
 * [ ] **Watches table already extended** (zip/radius/price ceiling). When a user **creates or edits** a watch with `sku` **and** `zip`:
 
-  * [ ] **Kick enrichment**: server-side call to `web/api/bestbuy/availability` to warm cache.
+  * [x] **Kick enrichment**: server-side call to `web/api/bestbuy/availability` to warm cache.
   * [ ] Store `zip` on the watch; if stores come back, keep them alongside watch (optional denorm).
 
 * [ ] **Alert matcher** (worker): in `worker/src/alerts/matcher.ts`

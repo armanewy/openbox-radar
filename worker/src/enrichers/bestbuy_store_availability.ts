@@ -52,10 +52,54 @@ async function saveCache(env: Env, payload: { sku: string; zip: string; stores: 
   });
 }
 
-async function fetchFromBestBuy(_env: Env, _sku: string, _zip: string): Promise<{ stores: BestBuyStore[]; failed: boolean }> {
-  // TODO: integrate official Best Buy store availability APIs.
-  // Placeholder returns empty list (treat as failure so cache refresh retry occurs later).
-  return { stores: [], failed: true };
+async function fetchFromBestBuy(env: Env, sku: string, zip: string): Promise<{ stores: BestBuyStore[]; failed: boolean }> {
+  const apiKey = env.BESTBUY_API_KEY;
+  if (!apiKey) {
+    console.warn('[bb enrich] missing BESTBUY_API_KEY');
+    return { stores: [], failed: true };
+  }
+  const radius = Number(env.BB_ENRICHMENT_SEARCH_RADIUS_MILES ?? 50) || 50;
+  const area = Math.min(Math.max(radius, 5), 250);
+  try {
+    const storeUrl = `https://api.bestbuy.com/v1/stores(area(${encodeURIComponent(zip)},${area}))?format=json&show=storeId,name,city,region,lat,lng&apiKey=${encodeURIComponent(apiKey)}`;
+    const storeRes = await fetch(storeUrl, { headers: { accept: 'application/json' } });
+    if (!storeRes.ok) {
+      console.warn('[bb enrich] store lookup failed', storeRes.status);
+      return { stores: [], failed: true };
+    }
+    const storeJson: any = await storeRes.json();
+    const storeList: any[] = Array.isArray(storeJson?.stores) ? storeJson.stores : [];
+
+    // Attempt to fetch store availability for the SKU (official API includes InStore availability with store IDs)
+    const availUrl = `https://api.bestbuy.com/v1/products(sku=${encodeURIComponent(sku)})?show=sku,storeAvailability&apiKey=${encodeURIComponent(apiKey)}&format=json`;
+    const availRes = await fetch(availUrl, { headers: { accept: 'application/json' } });
+    let availability: Record<string, boolean> = {};
+    if (availRes.ok) {
+      const availJson: any = await availRes.json();
+      const products: any[] = Array.isArray(availJson?.products) ? availJson.products : [];
+      const storeAvail = products[0]?.storeAvailability;
+      if (Array.isArray(storeAvail)) {
+        for (const entry of storeAvail) {
+          const id = entry?.storeId;
+          const status = entry?.hasAvailability ?? entry?.hasEnoughInventory;
+          if (id) availability[String(id)] = !!status;
+        }
+      }
+    }
+
+    const normalized: BestBuyStore[] = storeList.map((s) => ({
+      id: String(s.storeId),
+      name: s.name || `Best Buy ${s.city ?? ''}`.trim(),
+      lat: s.lat != null ? Number(s.lat) : null,
+      lng: s.lng != null ? Number(s.lng) : null,
+      hasOpenBox: availability[String(s.storeId)] ?? undefined,
+    }));
+
+    return { stores: normalized, failed: false };
+  } catch (err) {
+    console.warn('[bb enrich] fetch error', err);
+    return { stores: [], failed: true };
+  }
 }
 
 export async function getBestBuyStoreAvailability(env: Env, sku: string, zip: string): Promise<StoreAvailability> {
@@ -93,4 +137,3 @@ export async function getBestBuyStoreAvailability(env: Env, sku: string, zip: st
     failed: result.failed,
   };
 }
-

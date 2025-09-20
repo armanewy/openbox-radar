@@ -133,6 +133,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if ((parsed.data.retailer === 'bestbuy') && parsed.data.sku && parsed.data.zipcode && process.env.BESTBUY_ENRICHMENT_ENABLED === '1') {
+    try {
+      const origin = process.env.APP_BASE_URL || '';
+      const res = await fetch(`${origin}/api/bestbuy/availability?sku=${encodeURIComponent(parsed.data.sku)}&zip=${encodeURIComponent(parsed.data.zipcode)}`, {
+        headers: { 'x-internal': 'watch-enrich' },
+        cache: 'no-store',
+      });
+      await res.json().catch(() => ({}));
+    } catch (err) {
+      console.warn('[watch] enrichment warm failed', err);
+    }
+  }
+
   // If anonymous flow, send magic link (throttled like /api/auth/magic-link)
   if (!s && email) {
     try {

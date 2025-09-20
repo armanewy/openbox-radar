@@ -267,6 +267,7 @@ TLS & Drizzle CLI
 ## Notes & limitations
 - Best Buy Open Box API doesn’t expose store-level stock; items represent available open-box offers. Links expire after ~7 days; TTL is enforced (71h).
 - Geo filtering uses ZIP centroids and store coordinates when available; stores lacking coordinates are excluded when a radius filter is active. For best results, backfill `stores.lat/lng` (script provided).
+- Best Buy Open Box offers are national by default. Store-level pins require a `(SKU, ZIP)` enrichment; when fresh data is available you’ll see “local availability verified”. Without enrichment items are treated as online-only and are not pinned.
 - `/api/ingest` drops obvious dev/stub items in production (e.g., titles starting with “DEV”, example.com URLs, known stub storeIds) as a safeguard.
 - Alerts/auth are minimal; extend as needed.
 

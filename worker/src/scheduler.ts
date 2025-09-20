@@ -2,6 +2,53 @@ import { fetchBestBuyStore, fetchMicroCenterStore } from "./adapters/stubs";
 import { fetchMicroCenterOpenBoxDOM } from "./adapters/microcenter_dom";
 import { fetchBestBuyOpenBoxBySkus, fetchBestBuyOpenBoxByCategory } from "./adapters/bestbuy_api";
 import { fetchNeweggClearance } from "./adapters/newegg_clearance";
+import { getBestBuyStoreAvailability } from "./enrichers/bestbuy_store_availability";
+
+function baseUrlFromIngest(ingestUrl: string): string {
+  try {
+    const u = new URL(ingestUrl);
+    u.pathname = '/';
+    u.search = '';
+    u.hash = '';
+    return u.toString().replace(/\/$/, '');
+  } catch {
+    return '';
+  }
+}
+
+async function refreshBestBuyForHotWatches(env: any) {
+  if (env.ENABLE_BB_ENRICHMENT !== '1') return [] as any[];
+  const base = baseUrlFromIngest(env.INGEST_URL || '');
+  if (!base) return [];
+  const auth = env.CRON_SHARED_SECRET ? { authorization: `Bearer ${env.CRON_SHARED_SECRET}` } : {};
+  try {
+    const res = await fetch(`${base}/api/alerts/watches`, { headers: { ...auth } });
+    if (!res.ok) return [];
+    const data: any = await res.json();
+    const watches: any[] = data?.watches || [];
+    const seen = new Set<string>();
+    const refreshed: Array<{ sku: string; zip: string; fromCache: boolean }> = [];
+    for (const w of watches) {
+      if ((w.retailer as string)?.toLowerCase() !== 'bestbuy') continue;
+      const sku = w.sku || w.product_url?.split('/').pop();
+      const zip = w.zipcode;
+      if (!sku || !zip) continue;
+      const key = `${sku}:${zip}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      try {
+        const result = await getBestBuyStoreAvailability(env, sku, zip);
+        refreshed.push({ sku, zip, fromCache: result.fromCache });
+      } catch (err) {
+        console.warn('[scheduler] bb enrich refresh failed', sku, zip, err);
+      }
+    }
+    return refreshed;
+  } catch (err) {
+    console.warn('[scheduler] fetch watches for enrichment failed', err);
+    return [];
+  }
+}
 
 export const Scheduler = {
   async run(env: any) {
@@ -38,6 +85,8 @@ export const Scheduler = {
     const useRealNE = env.USE_REAL_NEWEGG === '1';
     const nePromise = fetchNeweggClearance(useRealNE);
 
+    const enrichment = await refreshBestBuyForHotWatches(env);
+
     const batches = await Promise.all([bbyPromise, mcPromise, nePromise]);
 
     const items = batches.flatMap((b) => b.items);
@@ -60,9 +109,9 @@ export const Scheduler = {
       });
 
       const json = await r.json().catch(() => ({}));
-      return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0, flags: { useRealBBY, useRealMC, allowDevStubs }, sources } as any;
+      return { ok: r.ok, status: r.status, ingested: json.inserted ?? 0, flags: { useRealBBY, useRealMC, allowDevStubs }, sources, enrichment } as any;
     } catch (e: any) {
-      return { ok: false, error: e?.message || String(e), step: 'ingest', ingestUrl, flags: { useRealBBY, useRealMC, allowDevStubs }, sources } as any;
+      return { ok: false, error: e?.message || String(e), step: 'ingest', ingestUrl, flags: { useRealBBY, useRealMC, allowDevStubs }, sources, enrichment } as any;
     }
   }
 }
