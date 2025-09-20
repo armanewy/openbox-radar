@@ -23,8 +23,13 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
 
   useEffect(() => {
     if (open) {
-      setZipcode("");
-      setRadius(25);
+      let savedZip = ''; let savedRadius = '';
+      try {
+        savedZip = localStorage.getItem('obr_zip') || '';
+        savedRadius = localStorage.getItem('obr_radius') || '';
+      } catch {}
+      setZipcode(savedZip || '');
+      setRadius(savedRadius ? Number(savedRadius) || 25 : 25);
       setMinCondition("fair");
       setPriceCeiling("");
     }
@@ -47,6 +52,10 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
     (payload as any).next = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/app';
     const ok = await create(payload);
     if (ok) onOpenChange(false);
+    try {
+      if (zipcode) localStorage.setItem('obr_zip', zipcode);
+      localStorage.setItem('obr_radius', String(radius));
+    } catch {}
   }
 
   return (

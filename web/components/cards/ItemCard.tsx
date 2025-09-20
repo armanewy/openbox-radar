@@ -275,6 +275,34 @@ export default function ItemCard({ item }: { item: Item }) {
             </DrawerHeader>
             <div className="px-3 pb-3">
               <PriceHistoryChart retailer={item.retailer} sku={item.sku} url={item.url} store_id={item.store_id} />
+              {item.retailer === 'bestbuy' && item.sku ? (
+                <div className="mt-4 space-y-2">
+                  <Button variant="outline" size="sm" onClick={checkAvailability} disabled={availabilityLoading}>
+                    {availabilityLoading ? 'Checking local availability…' : 'Check local availability'}
+                  </Button>
+                  {availabilityError ? <div className="text-xs text-red-600">{availabilityError}</div> : null}
+                  {availability?.stores && (
+                    <div className="text-xs text-gray-700 space-y-1">
+                      <div className="text-gray-500">Last checked {availability.refreshed_at ? timeAgo(availability.refreshed_at) : 'just now'}</div>
+                      {availability.stores.length ? (
+                        <ul className="space-y-1">
+                          {availability.stores.slice(0, 6).map((s: any) => (
+                            <li key={s.id || s.name} className="flex items-center justify-between gap-2">
+                              <span>{s.name || s.id}</span>
+                              <span className={`text-[11px] ${s.hasOpenBox ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                {s.hasOpenBox ? 'Available' : 'Not in stock'}
+                              </span>
+                            </li>
+                          ))}
+                          {availability.stores.length > 6 ? <li className="text-gray-500">and {availability.stores.length - 6} more…</li> : null}
+                        </ul>
+                      ) : (
+                        <div>No local availability yet.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
         </DrawerContent>
