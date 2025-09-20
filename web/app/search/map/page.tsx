@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { absoluteUrl } from "@/lib/utils/url";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import StoreMap from "@/components/StoreMap";
 
 type Item = {
   id: number;
@@ -91,6 +92,28 @@ export default function MapView() {
     }
   }
   const stores = Array.from(byStore.values()).sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+  const origin = (() => {
+    const lat = sp.get('lat');
+    const lng = sp.get('lng');
+    if (lat && lng) return { lat: Number(lat), lng: Number(lng) };
+    return null;
+  })();
+  const pins = stores
+    .map((s) => {
+      // find any item with coords
+      const found = s.items.find((it) => (it as any).store_lat != null && (it as any).store_lng != null) as any;
+      if (!found) return null;
+      return {
+        id: `${s.retailer}:${s.storeId}`,
+        name: s.name,
+        lat: Number(found.store_lat),
+        lng: Number(found.store_lng),
+        count: s.items.length,
+        dist: s.dist ?? null,
+        browseUrl: `/search?retailer=${encodeURIComponent(s.retailer)}&store_id=${encodeURIComponent(s.storeId)}`,
+      };
+    })
+    .filter(Boolean) as any[];
 
   return (
     <main className="container mx-auto max-w-6xl p-4 md:p-6">
@@ -112,6 +135,9 @@ export default function MapView() {
         </div>
         <Button variant="outline" onClick={useMyLocation}>Use my location</Button>
         {locErr ? <div className="text-sm text-red-600">{locErr}</div> : null}
+      </div>
+      <div className="mb-5">
+        <StoreMap pins={pins} origin={origin || undefined} />
       </div>
       {stores.length === 0 ? (
         <div className="border rounded-xl p-6 bg-white/60 text-gray-700">No items match your filters.</div>

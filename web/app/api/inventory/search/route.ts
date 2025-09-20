@@ -181,6 +181,8 @@ export async function GET(req: NextRequest) {
       seen_at: r.seen_at,
       image_url: r.image_url,
       distance_miles: (r as any)._distance_miles,
+      store_lat: (r as any).store_lat ?? null,
+      store_lng: (r as any).store_lng ?? null,
       store: {
         name: r.store_name,
         city: r.store_city,
