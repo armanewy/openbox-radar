@@ -22,6 +22,27 @@ function ensureLeafletCss() {
   document.head.appendChild(link);
 }
 
+function ensureLeafletJs(): Promise<any> {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  // If already present, resolve immediately
+  if ((window as any).L) return Promise.resolve((window as any).L);
+  return new Promise((resolve, reject) => {
+    const id = 'leaflet-js';
+    if (document.getElementById(id)) {
+      const check = () => ((window as any).L ? resolve((window as any).L) : setTimeout(check, 50));
+      check();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
+    script.onload = () => resolve((window as any).L);
+    script.onerror = (e) => reject(e);
+    document.body.appendChild(script);
+  });
+}
+
 export default function StoreMap({ pins, origin }: { pins: StorePin[]; origin?: { lat: number; lng: number } }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -31,7 +52,7 @@ export default function StoreMap({ pins, origin }: { pins: StorePin[]; origin?: 
     let markers: any[] = [];
     (async () => {
       ensureLeafletCss();
-      L = await import('leaflet');
+      L = await ensureLeafletJs();
       if (!ref.current) return;
       map = L.map(ref.current, { zoomControl: true, attributionControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -67,4 +88,3 @@ export default function StoreMap({ pins, origin }: { pins: StorePin[]; origin?: 
 
   return <div ref={ref} className="h-[360px] w-full rounded-xl border border-gray-300 overflow-hidden bg-gray-100" />;
 }
-
