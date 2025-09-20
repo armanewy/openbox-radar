@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import StoreMap from "@/components/StoreMap";
+import { MapPin, MapPinOff } from "lucide-react";
 
 type Item = {
   id: number;
@@ -206,7 +207,8 @@ export default function MapView() {
                 </div>
                 <div className="text-sm text-gray-700 flex items-center gap-3">
                   {s.retailer === 'bestbuy' ? (
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${s.local ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-700'}`}>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${s.local ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
+                      {s.local ? <MapPin className="h-3.5 w-3.5" /> : <MapPinOff className="h-3.5 w-3.5" />}
                       {s.local ? 'Local store' : 'Online only'}
                     </span>
                   ) : null}

@@ -48,11 +48,11 @@ export default function InfiniteList({ fetchUrl, baseParams, initialItems, initi
   return (
     <div>
       <div className="mb-2 text-sm text-gray-600">Showing {items.length} results</div>
-      <ul className="space-y-3">
+      <div className="grid gap-3 lg:grid-cols-1 xl:grid-cols-2">
         {items.map((it) => (
           <ItemCard key={`${it.retailer}-${it.store_id}-${it.id}`} item={it} />
         ))}
-      </ul>
+      </div>
       {cursor && (
         <div className="mt-6 flex items-center justify-center">
           <button
