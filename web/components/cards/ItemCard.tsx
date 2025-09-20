@@ -207,7 +207,7 @@ export default function ItemCard({ item }: { item: Item }) {
     <m.li
       whileHover={reduce ? undefined : { y: -4 }}
       whileTap={reduce ? undefined : { scale: 0.98 }}
-      className="rounded-2xl border border-emerald-100 bg-white/95 p-4 shadow-sm transition hover:shadow-md"
+      className="rounded-2xl border border-emerald-300 bg-white p-4 shadow-sm transition hover:shadow-md"
     >
       <div className="flex gap-4">
         <div className="flex w-24 flex-col items-center gap-2">
@@ -279,7 +279,7 @@ export default function ItemCard({ item }: { item: Item }) {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-emerald-50 pt-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-emerald-200 pt-3">
         <div className="flex min-w-0 items-center gap-2 text-xs text-gray-500">
           {actionStatus ? actionStatus.node : null}
           {actionStatus?.meta ? <span className="text-gray-400">{actionStatus.meta}</span> : null}
