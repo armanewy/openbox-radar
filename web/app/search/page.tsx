@@ -20,6 +20,14 @@ type Item = {
   url: string;
   image_url: string | null;
   seen_at: string;
+  distance_miles?: number | null;
+  store_lat?: number | null;
+  store_lng?: number | null;
+  enrichment?: {
+    status: 'online' | 'verifying' | 'local';
+    refreshed_at?: string | null;
+    stores?: Array<{ id: string; name?: string | null; city?: string | null; state?: string | null; zip?: string | null; hasOpenBox?: boolean | null }>;
+  };
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
 

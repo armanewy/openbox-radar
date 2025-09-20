@@ -28,6 +28,7 @@ export type Item = {
   enrichment?: {
     status: 'online' | 'verifying' | 'local';
     refreshed_at?: string | null;
+    stores?: Array<{ id: string; name?: string | null; city?: string | null; state?: string | null; zip?: string | null; hasOpenBox?: boolean | null }>;
   };
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
@@ -94,6 +95,9 @@ export default function ItemCard({ item }: { item: Item }) {
   const [openHistory, setOpenHistory] = useState(false);
   const [voted, setVoted] = useState(false);
   const [votes, setVotes] = useState<number | undefined>((item as any).votes_24h);
+  const [availability, setAvailability] = useState<any | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string>('');
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   async function upvote() {
     if (voted) return;
     setVoted(true);
@@ -104,6 +108,32 @@ export default function ItemCard({ item }: { item: Item }) {
     } catch {}
   }
   const reduce = useReducedMotion();
+
+  async function checkAvailability() {
+    if (!item.sku) return;
+    let storedZip = '';
+    try {
+      storedZip = localStorage.getItem('obr_zip') || '';
+    } catch {}
+    if (!storedZip) {
+      setAvailabilityError('Set a ZIP via the Near You card to check local availability.');
+      return;
+    }
+    setAvailabilityError('');
+    setAvailabilityLoading(true);
+    try {
+      const res = await fetch(`/api/bestbuy/availability?sku=${encodeURIComponent(item.sku)}&zip=${encodeURIComponent(storedZip)}`);
+      const data = await res.json();
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || 'Could not check availability');
+      }
+      setAvailability(data);
+    } catch (err: any) {
+      setAvailabilityError(err?.message || 'Failed to check availability');
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  }
 
   return (
     <m.li whileHover={reduce ? undefined : { y: -2 }} whileTap={reduce ? undefined : { scale: 0.99 }} className="rounded-xl border border-gray-300 shadow p-2.5 bg-white overflow-hidden">
@@ -154,14 +184,17 @@ export default function ItemCard({ item }: { item: Item }) {
             </span>
           </div>
           {item.enrichment?.status && (
-            <div className="mt-1 text-[11px]">
+            <div className="mt-1 text-[11px] flex items-center gap-2 text-gray-600">
               {item.enrichment.status === 'local' ? (
                 <Badge variant="success" className="text-[10px]">Local availability verified</Badge>
               ) : item.enrichment.status === 'verifying' ? (
-                <span className="text-gray-500">Checking local availability…</span>
+                <span>Checking local availability…</span>
               ) : (
-                <span className="text-gray-500">Online only</span>
+                <span>Online only</span>
               )}
+              {item.enrichment.refreshed_at ? (
+                <span className="text-gray-400">· updated {timeAgo(item.enrichment.refreshed_at)}</span>
+              ) : null}
             </div>
           )}
           <a href={item.url} target="_blank" rel="noopener" className="mt-1 block text-sm font-medium leading-snug hover:underline line-clamp-2">
@@ -191,14 +224,40 @@ export default function ItemCard({ item }: { item: Item }) {
                   <Share2 size={14} />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
+                {item.retailer === 'bestbuy' && item.sku ? (
+                  <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={checkAvailability} disabled={availabilityLoading}>
+                    <span>{availabilityLoading ? 'Checking…' : 'Local availability'}</span>
+                  </Button>
+                ) : null}
                 <Button variant="outline" size="sm" className="inline-flex gap-1" onClick={upvote} disabled={voted} title="Mark helpful">
                   <ThumbsUp size={14} />
                   <span className="hidden sm:inline">Helpful{typeof votes === 'number' ? ` (${votes})` : ''}</span>
                 </Button>
               </div>
+              </div>
             </div>
           </div>
-        </div>
+          {availabilityError ? <div className="text-xs text-red-600 mt-2">{availabilityError}</div> : null}
+          {availability?.stores && (
+            <div className="mt-2 text-xs text-gray-700 space-y-1">
+              <div className="text-gray-500">Last checked {availability.refreshed_at ? timeAgo(availability.refreshed_at) : 'just now'}</div>
+              {availability.stores.length ? (
+                <ul className="space-y-1">
+                  {availability.stores.slice(0, 4).map((s: any) => (
+                    <li key={s.id || s.name} className="flex items-center justify-between gap-2">
+                      <span>{s.name || s.id}</span>
+                      <span className={`text-[11px] ${s.hasOpenBox ? 'text-emerald-600' : 'text-gray-500'}`}>
+                        {s.hasOpenBox ? 'Available' : 'Not in stock'}
+                      </span>
+                    </li>
+                  ))}
+                  {availability.stores.length > 4 ? <li className="text-gray-500">and {availability.stores.length - 4} more…</li> : null}
+                </ul>
+              ) : (
+                <div>No local availability yet.</div>
+              )}
+            </div>
+          )}
       </div>
       <WatchSheet
         open={open}

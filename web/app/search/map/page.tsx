@@ -18,6 +18,11 @@ type Item = {
   image_url?: string | null;
   store_lat?: number | null;
   store_lng?: number | null;
+  enrichment?: {
+    status: 'online' | 'verifying' | 'local';
+    refreshed_at?: string | null;
+    stores?: Array<{ id: string; name?: string; city?: string | null; state?: string | null; zip?: string | null; lat?: number | null; lng?: number | null; hasOpenBox?: boolean | null }>;
+  };
   store: { name: string | null; city: string | null; state: string | null; zipcode: string | null };
 };
 
@@ -77,22 +82,66 @@ export default function MapView() {
     }, (err) => setLocErr(err?.message || 'Location permission denied'), { enableHighAccuracy: false, maximumAge: 300000, timeout: 10000 });
   }
 
-  // Group items by store
-  const byStore = new Map<string, { retailer: string; storeId: string; name: string; city: string; state: string; dist: number | null; items: Item[] }>();
-  for (const it of items) {
-    const key = `${it.retailer}:${it.store_id}`;
-    const name = it.store?.name || it.store_id;
-    const city = it.store?.city || '';
-    const state = it.store?.state || '';
-    const d = typeof it.distance_miles === 'number' ? it.distance_miles! : null;
-    const cur = byStore.get(key);
-    if (!cur) {
-      byStore.set(key, { retailer: it.retailer, storeId: it.store_id, name: name || it.store_id, city, state, dist: d, items: [it] });
+  type StoreGroup = {
+    retailer: string;
+    storeId: string;
+    name: string;
+    city: string;
+    state: string;
+    dist: number | null;
+    items: Item[];
+    lat?: number | null;
+    lng?: number | null;
+    local?: boolean;
+  };
+
+  const byStore = new Map<string, StoreGroup>();
+
+  function addToGroup(key: string, info: Partial<StoreGroup>, item: Item) {
+    const existing = byStore.get(key);
+    if (existing) {
+      existing.items.push(item);
+      if (existing.dist == null && info.dist != null) existing.dist = info.dist;
+      if (existing.lat == null && info.lat != null) existing.lat = info.lat;
+      if (existing.lng == null && info.lng != null) existing.lng = info.lng;
+      if (info.local) existing.local = true;
     } else {
-      cur.items.push(it);
-      if (cur.dist == null && d != null) cur.dist = d; // take first known distance
+      byStore.set(key, {
+        retailer: info.retailer || item.retailer,
+        storeId: info.storeId || item.store_id,
+        name: info.name || item.store?.name || item.store_id,
+        city: info.city ?? item.store?.city ?? '',
+        state: info.state ?? item.store?.state ?? '',
+        dist: info.dist ?? (typeof item.distance_miles === 'number' ? item.distance_miles : null),
+        items: [item],
+        lat: info.lat ?? item.store_lat ?? null,
+        lng: info.lng ?? item.store_lng ?? null,
+        local: info.local,
+      });
     }
   }
+
+  for (const it of items) {
+    if (it.retailer === 'bestbuy' && it.enrichment?.stores?.length) {
+      for (const store of it.enrichment.stores) {
+        addToGroup(`bestbuy:${store.id}`, {
+          retailer: 'bestbuy',
+          storeId: String(store.id),
+          name: store.name || `Best Buy ${store.city ?? ''}`.trim(),
+          city: store.city ?? '',
+          state: store.state ?? '',
+          lat: store.lat ?? null,
+          lng: store.lng ?? null,
+          local: store.hasOpenBox ?? undefined,
+        }, it);
+      }
+      continue;
+    }
+
+    const key = `${it.retailer}:${it.store_id}`;
+    addToGroup(key, { retailer: it.retailer, storeId: it.store_id }, it);
+  }
+
   const stores = Array.from(byStore.values()).sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
   const origin = (() => {
     const lat = sp.get('lat');
@@ -102,14 +151,13 @@ export default function MapView() {
   })();
   const pins = stores
     .map((s) => {
-      // find any item with coords
-      const found = s.items.find((it) => it.store_lat != null && it.store_lng != null) as Item | undefined;
-      if (!found) return null;
+      if (s.lat == null || s.lng == null) return null;
+      if (s.retailer === 'bestbuy' && !s.local) return null;
       return {
         id: `${s.retailer}:${s.storeId}`,
         name: s.name,
-        lat: Number(found.store_lat),
-        lng: Number(found.store_lng),
+        lat: Number(s.lat),
+        lng: Number(s.lng),
         count: s.items.length,
         dist: s.dist ?? null,
         browseUrl: `/search?retailer=${encodeURIComponent(s.retailer)}&store_id=${encodeURIComponent(s.storeId)}`,
@@ -140,6 +188,10 @@ export default function MapView() {
       </div>
       <div className="mb-5">
         <StoreMap pins={pins} origin={origin || undefined} />
+        <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-4">
+          <span>Solid pin = local availability verified</span>
+          <span>Hollow pin = other retailers with store coordinates</span>
+        </div>
       </div>
       {stores.length === 0 ? (
         <div className="border rounded-xl p-6 bg-white/60 text-gray-700">No items match your filters.</div>
@@ -153,6 +205,11 @@ export default function MapView() {
                   <span className="ml-2 text-sm text-gray-600">{s.city}{s.state ? `, ${s.state}` : ''}</span>
                 </div>
                 <div className="text-sm text-gray-700 flex items-center gap-3">
+                  {s.retailer === 'bestbuy' ? (
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${s.local ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-700'}`}>
+                      {s.local ? 'Local store' : 'Online only'}
+                    </span>
+                  ) : null}
                   <span className="text-gray-500">{s.items.length} items</span>
                   {s.dist != null ? <span>~{s.dist.toFixed(1)} mi</span> : null}
                   <Link href={`/search?retailer=${encodeURIComponent(s.retailer)}&store_id=${encodeURIComponent(s.storeId)}`} className="underline">Browse</Link>

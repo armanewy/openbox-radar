@@ -3,6 +3,9 @@ type Env = { [key: string]: string | undefined };
 export type BestBuyStore = {
   id: string;
   name: string;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
   lat?: number | null;
   lng?: number | null;
   hasOpenBox?: boolean;
@@ -90,6 +93,9 @@ async function fetchFromBestBuy(env: Env, sku: string, zip: string): Promise<{ s
     const normalized: BestBuyStore[] = storeList.map((s) => ({
       id: String(s.storeId),
       name: s.name || `Best Buy ${s.city ?? ''}`.trim(),
+      city: s.city ?? null,
+      state: s.region ?? null,
+      zip: s.postalCode ?? zip,
       lat: s.lat != null ? Number(s.lat) : null,
       lng: s.lng != null ? Number(s.lng) : null,
       hasOpenBox: availability[String(s.storeId)] ?? undefined,

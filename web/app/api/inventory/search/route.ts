@@ -34,6 +34,13 @@ function parseMulti(param: string | null): string[] | null {
   return parts.length ? parts : null;
 }
 
+function getBaseUrl(req: NextRequest) {
+  if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL;
+  const proto = req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol.replace(':', '') ?? 'http';
+  const host = req.headers.get('host');
+  return host ? `${proto}://${host}` : '';
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
 
@@ -167,6 +174,30 @@ export async function GET(req: NextRequest) {
     } catch {}
   }
 
+  const enrichmentMap: Record<string, { status: 'online' | 'verifying' | 'local'; refreshed_at: string | null; stores?: any[] }> = {};
+  if (zip && process.env.BESTBUY_ENRICHMENT_ENABLED === '1') {
+    const baseUrl = getBaseUrl(req);
+    const bestBuySkus = Array.from(new Set(items.filter((it) => it.retailer === 'bestbuy' && it.sku).map((it) => it.sku!))).slice(0, 15);
+    for (const sku of bestBuySkus) {
+      try {
+        const res = await fetch(`${baseUrl}/api/bestbuy/availability?sku=${encodeURIComponent(sku)}&zip=${encodeURIComponent(zip)}`, {
+          headers: { 'x-internal': 'inventory-search-enrich' },
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const stores = Array.isArray(data?.stores) ? data.stores : [];
+        let status: 'online' | 'verifying' | 'local' = 'online';
+        if (stores.some((s: any) => s?.hasOpenBox)) status = 'local';
+        else if (data?.queued || data?.stale) status = 'verifying';
+        enrichmentMap[sku] = {
+          status,
+          refreshed_at: data?.refreshed_at ?? null,
+          stores,
+        };
+      } catch {}
+    }
+  }
+
   return NextResponse.json({
     items: items.map((r) => ({
       id: r.id,
@@ -190,6 +221,13 @@ export async function GET(req: NextRequest) {
         zipcode: r.store_zip,
       },
       votes_24h: votesMap ? votesMap[r.id] || 0 : undefined,
+      enrichment: r.sku && enrichmentMap[r.sku]
+        ? {
+            status: enrichmentMap[r.sku].status,
+            refreshed_at: enrichmentMap[r.sku].refreshed_at,
+            stores: enrichmentMap[r.sku].stores,
+          }
+        : undefined,
     })),
     nextCursor,
     geo: geoMeta,

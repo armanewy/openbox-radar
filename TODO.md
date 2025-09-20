@@ -456,15 +456,15 @@ Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` t
 
   * For BB items:
 
-    * If no enrichment available for user ZIP → badge **“📦 Online only”**; no pin on map.
-    * If enrichment exists and not stale → show **“Local availability verified <x>m ago”**; enable pins.
+    * [x] If no enrichment available for user ZIP → badge **“📦 Online only”**; no pin on map.
+    * [x] If enrichment exists and not stale → show **“Local availability verified <x>m ago”**; enable pins.
 
 * [ ] **Item Drawer** (`PriceHistoryChart` drawer or Item detail)
 
   * Add **“Check local availability”** action if user has ZIP set; hit `web/api/bestbuy/availability?sku=...`.
   * Show nearest stores with distance (reuse `milesBetween`) and `hasOpenBox` pills.
 
-* [ ] **Map**
+* [x] **Map**
 
   * Do **not** pin BB items unless enriched; pin only the returned stores with `hasOpenBox=true`.
   * Legend:
