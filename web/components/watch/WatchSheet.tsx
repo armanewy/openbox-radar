@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 type Props = {
   open: boolean;
   onOpenChange: (next: boolean) => void;
-  defaults: Partial<WatchPayload> & { retailer?: "bestbuy" | "microcenter" };
+  defaults: Partial<WatchPayload> & { retailer?: "bestbuy" | "microcenter" | "newegg" };
 };
 
 export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
   const { create, loading } = useOptimisticWatch();
-  const [retailer, setRetailer] = useState<"bestbuy" | "microcenter">((defaults.retailer as any) || "bestbuy");
+  const [retailer, setRetailer] = useState<"bestbuy" | "microcenter" | "newegg">((defaults.retailer as any) || "bestbuy");
   const [zipcode, setZipcode] = useState("");
   const [radius, setRadius] = useState(25);
   const [minCondition, setMinCondition] = useState("fair");
@@ -75,6 +75,7 @@ export default function WatchSheet({ open, onOpenChange, defaults }: Props) {
                 <select className="mt-1 w-full border rounded px-3 py-2" value={retailer} onChange={(e) => setRetailer(e.target.value as any)}>
                   <option value="bestbuy">Best Buy</option>
                   <option value="microcenter">Micro Center</option>
+                  <option value="newegg">Newegg</option>
                 </select>
               </div>
               {defaults.sku ? (

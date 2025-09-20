@@ -5,7 +5,7 @@ import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
 const Item = z.object({
-  retailer: z.enum(['bestbuy','microcenter']),
+  retailer: z.enum(['bestbuy','microcenter','newegg']),
   storeId: z.string().min(1),
   sku: z.string().optional(),
   title: z.string().min(1),
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const isDevLike = (it: z.infer<typeof Item>) => {
     const titleLooksDev = /^\s*DEV\b/i.test(it.title);
     const urlLooksDev = /example\.com/i.test(it.url);
-    const devStores = new Set(['bby-123', 'mc-cambridge']);
+    const devStores = new Set(['bby-123', 'mc-cambridge', 'newegg-online']);
     const storeLooksDev = devStores.has(it.storeId);
     return titleLooksDev || urlLooksDev || storeLooksDev;
   };

@@ -19,7 +19,7 @@ export default async function RetailerStateStores({ params }: { params: { retail
     .where(and(eq(stores.retailer, retailer as any), eq(stores.state, state)))
     .orderBy(stores.city, stores.name);
 
-  const label = (id: string) => id === "bestbuy" ? "Best Buy" : id === "microcenter" ? "Micro Center" : id;
+  const label = (id: string) => id === "bestbuy" ? "Best Buy" : id === "microcenter" ? "Micro Center" : id === "newegg" ? "Newegg" : id;
 
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-6">

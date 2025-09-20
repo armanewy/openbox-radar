@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Retailer = "bestbuy" | "microcenter";
+type Retailer = "bestbuy" | "microcenter" | "newegg";
 type StateItem = { state: string; count: number };
 type StoreItem = { store_id: string; name: string | null; city: string | null; zipcode: string | null };
 
@@ -31,13 +31,21 @@ export default function NewWatchWizard() {
   const [priceCeiling, setPriceCeiling] = useState<string>("");
 
   useEffect(() => {
+    if (retailer === 'newegg') {
+      setUseStores(false);
+      setStates([]);
+      setStateSel('');
+      setStoreOptions([]);
+      setStoresSel([]);
+      return;
+    }
     if (useStores) {
       fetch(`/api/stores?retailer=${retailer}`).then(r => r.json()).then((d) => setStates(d.states || []));
     }
   }, [useStores, retailer]);
 
   useEffect(() => {
-    if (useStores && stateSel) {
+    if (useStores && retailer !== 'newegg' && stateSel) {
       fetch(`/api/stores?retailer=${retailer}&state=${encodeURIComponent(stateSel)}`)
         .then(r => r.json()).then((d) => setStoreOptions(d.stores || []));
     } else {
@@ -76,6 +84,7 @@ export default function NewWatchWizard() {
           <select value={retailer} onChange={(e) => setRetailer(e.target.value as Retailer)} className="border rounded px-3 py-2">
             <option value="bestbuy">Best Buy</option>
             <option value="microcenter">Micro Center</option>
+            <option value="newegg">Newegg</option>
           </select>
           <div className="flex justify-end gap-2">
             <button className="px-4 py-2 border rounded" onClick={() => router.push("/app")}>Cancel</button>
@@ -88,7 +97,7 @@ export default function NewWatchWizard() {
         <section className="space-y-3">
           <h2 className="font-medium">Step 2: Location</h2>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={useStores} onChange={(e) => setUseStores(e.target.checked)} />
+            <input type="checkbox" checked={useStores} disabled={retailer === 'newegg'} onChange={(e) => setUseStores(e.target.checked)} />
             Pick specific stores instead of ZIP + radius
           </label>
           {!useStores ? (

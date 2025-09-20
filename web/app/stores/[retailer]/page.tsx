@@ -18,7 +18,7 @@ export default async function RetailerStates({ params }: { params: { retailer: s
     .map((r) => ({ state: r.state as string | null, count: Number(r.count) }))
     .filter((r) => r.state && r.state.trim().length);
 
-  const label = (id: string) => id === "bestbuy" ? "Best Buy" : id === "microcenter" ? "Micro Center" : id;
+  const label = (id: string) => id === "bestbuy" ? "Best Buy" : id === "microcenter" ? "Micro Center" : id === "newegg" ? "Newegg" : id;
 
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-6">

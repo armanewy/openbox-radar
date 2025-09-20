@@ -4,7 +4,7 @@ import StoreRow from "@/components/stores/StoreRow";
 
 type Store = { store_id: string; name: string | null; city: string | null; zipcode: string | null };
 
-export default function StoreList({ retailer, stores }: { retailer: "bestbuy" | "microcenter"; stores: Store[] }) {
+export default function StoreList({ retailer, stores }: { retailer: "bestbuy" | "microcenter" | "newegg"; stores: Store[] }) {
   const [compact, setCompact] = useState(false);
   const [showMap, setShowMap] = useState(false);
   return (

@@ -5,7 +5,7 @@ import WatchSheet from "@/components/watch/WatchSheet";
 import { Button } from "@/components/ui/button";
 
 type Props = {
-  retailer: "bestbuy" | "microcenter";
+  retailer: "bestbuy" | "microcenter" | "newegg";
   store: { store_id: string; name: string | null; city: string | null; zipcode: string | null };
 };
 

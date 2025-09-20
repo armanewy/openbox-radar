@@ -1,6 +1,6 @@
 # Open‑Box Radar
 
-Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑box deals, stores normalized snapshots in Postgres, and exposes fast search and browse. Best Buy uses the official Open Box API; Micro Center can be scraped via DOM. The UI is open to browse/search (no login). “Watch” and “Save search” use passwordless email (magic link).
+Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑box deals, stores normalized snapshots in Postgres, and exposes fast search and browse. Best Buy uses the official Open Box API; Micro Center and Newegg inventories are scraped via HTML/DOM parsers. The UI is open to browse/search (no login). “Watch” and “Save search” use passwordless email (magic link).
 
 ## Architecture overview
 - The Next.js app router experience covers the marketing site, search, and authenticated watch dashboard. Shared layout code loads the magic-link session from cookies so server and client components render consistently.
@@ -93,6 +93,8 @@ Worker (`worker/wrangler.toml` / secrets)
 - `BESTBUY_API_KEY` — Worker secret
 - Source selection: `BESTBUY_SKUS` or `BESTBUY_CATEGORY` (with `BESTBUY_PAGE_SIZE`)
 - `USE_REAL_MICROCENTER` — optional, `1` to scrape DOM
+- `MICROCENTER_STORE_IDS` — comma list of store ids (e.g. `mc-cambridge,mc-brooklyn`)
+- `USE_REAL_NEWEGG` — `1` to scrape Newegg open-box listings
 - `ENABLE_BB_ENRICHMENT`, `BB_ENRICHMENT_TTL_MIN`, `BB_ENRICHMENT_FAIL_TTL_MIN`, `BB_MAX_ENRICH_RPS`
 
 ## Data model (Drizzle)
@@ -135,8 +137,9 @@ Worker sender
 ## Retailer adapters
 
 Micro Center
-- Real DOM scrape: `worker/src/adapters/microcenter_dom.ts` via `linkedom`
+- Real DOM scrape per store: `worker/src/adapters/microcenter_dom.ts` via `linkedom`
 - Toggle with `USE_REAL_MICROCENTER=1` (else stub: `adapters/stubs.ts`)
+- Configure stores via `MICROCENTER_STORE_IDS` (defaults to `mc-cambridge`)
 
 Best Buy (official API)
 - Worker adapter: `worker/src/adapters/bestbuy_api.ts`
@@ -317,3 +320,6 @@ This section describes the current user-facing logic.
 - Read the “Business logic & product behavior” section above to understand current UX, alerting expectations, and pricing features.
 - Explore the retailer adapters in `worker/src/adapters` alongside the scheduler to see how feeds flow into `/api/ingest`.
 - Run the local seed script (`node scripts/seed_dev_items.js`) and experiment with the dashboard to trace a watch from creation through worker ingest and alert matching.
+- Newegg
+- DOM scrape of Open-Box listings: `worker/src/adapters/newegg_clearance.ts`
+- Toggle with `USE_REAL_NEWEGG=1`

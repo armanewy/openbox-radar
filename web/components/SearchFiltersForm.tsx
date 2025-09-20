@@ -30,6 +30,7 @@ export default function SearchFiltersForm({ q, retailer, sku, min_condition, pri
           <option value="">All</option>
           <option value="bestbuy">Best Buy</option>
           <option value="microcenter">Micro Center</option>
+          <option value="newegg">Newegg</option>
         </select>
       </div>
       <div>

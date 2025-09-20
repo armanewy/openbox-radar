@@ -8,7 +8,7 @@ import { Resend } from "resend";
 import { generateToken, normalizeEmail, tokenExpiry, isValidEmail } from "@/lib/auth/tokens";
 
 const WatchInput = z.object({
-  retailer: z.enum(["bestbuy","microcenter"]),
+  retailer: z.enum(["bestbuy","microcenter","newegg"]),
   sku: z.string().optional(),
   product_url: z.string().url().optional(),
   keywords: z.array(z.string()).optional(),

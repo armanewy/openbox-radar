@@ -31,6 +31,7 @@ async function Watches() {
         <select name="retailer" className="border rounded px-2 py-2">
           <option value="bestbuy">Best Buy</option>
           <option value="microcenter">Micro Center</option>
+          <option value="newegg">Newegg</option>
         </select>
         <input name="sku" placeholder="SKU (optional)" className="border rounded px-2 py-2" />
         <input name="zipcode" placeholder="ZIP code" required className="border rounded px-2 py-2" />
