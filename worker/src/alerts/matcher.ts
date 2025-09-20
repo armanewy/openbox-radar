@@ -34,6 +34,33 @@ async function fetchBestBuyAvailability(env: any, sku: string, zip: string) {
   }
 }
 
+async function fetchZipLatLng(zip: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const r = await fetch(`https://api.zippopotam.us/us/${encodeURIComponent(zip)}`, { headers: { accept: 'application/json' } });
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    const p = j?.places?.[0];
+    if (!p) return null;
+    const lat = Number(p.latitude);
+    const lng = Number(p.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
+function milesBetween(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 3958.7613;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
 export async function findMatches(env: any): Promise<Match[]> {
   const base = baseUrlFromIngest(env.INGEST_URL || '');
   if (!base) return [];
@@ -55,7 +82,21 @@ export async function findMatches(env: any): Promise<Match[]> {
         const stores = Array.isArray(enrich?.stores) ? enrich.stores : [];
         const radius = Number(w.radius_miles || 0);
         if (stores.length && radius > 0) {
-          const hasLocal = stores.some((s: any) => s?.hasOpenBox);
+          const origin = await fetchZipLatLng(w.zipcode);
+          let hasLocal = false;
+          if (origin) {
+            for (const s of stores) {
+              if (!s?.hasOpenBox) continue;
+              const lat = typeof s.lat === 'number' ? s.lat : null;
+              const lng = typeof s.lng === 'number' ? s.lng : null;
+              if (lat == null || lng == null) continue;
+              const d = milesBetween(origin, { lat, lng });
+              if (d <= radius) { hasLocal = true; break; }
+            }
+          } else {
+            // Fallback: if we can't locate ZIP, treat any hasOpenBox as a candidate
+            hasLocal = stores.some((s: any) => s?.hasOpenBox);
+          }
           if (!hasLocal) filtered = [];
         }
       }
