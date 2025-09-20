@@ -2,6 +2,11 @@
 
 Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑box deals, stores normalized snapshots in Postgres, and exposes fast search and browse. Best Buy uses the official Open Box API; Micro Center can be scraped via DOM. The UI is open to browse/search (no login). “Watch” and “Save search” use passwordless email (magic link).
 
+## Architecture overview
+- The Next.js app router experience covers the marketing site, search, and authenticated watch dashboard. Shared layout code loads the magic-link session from cookies so server and client components render consistently.
+- REST-style routes under `web/app/api` power inventory search/history, trending feeds, watches, alerts, analytics logging, and retailer-specific enrichment. Cursor pagination, ZIP radius checks, and enrichment toggles live alongside Drizzle models for consistent data access.
+- A Cloudflare Worker schedules retailer adapters, normalizes payloads, and POSTs them to `/api/ingest`. It can refresh Best Buy enrichment before alert matching so the web APIs can notify watch owners with current local availability.
+
 ## Repo layout
 - `web/` — Next.js app (app router)
   - Drizzle ORM + Postgres (Supabase‑friendly)
@@ -10,6 +15,8 @@ Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑bo
 - `worker/` — Cloudflare Worker
   - Schedules pulls from Best Buy (API) and Micro Center (DOM, optional)
   - POSTs normalized items to `web` `/api/ingest`
+- `db/` — JSON store metadata and supporting artifacts that complement Drizzle schema definitions (e.g., Best Buy store IDs).
+- `scripts/` — Utilities like `seed_dev_items.js` to exercise ingest and local workflows.
 - `.env.example` — environment template
 
 ## Quick start (dev)
@@ -59,39 +66,15 @@ curl -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:8787/cron
    - Search: http://localhost:3000/search
    - Home (Trending, Drops): http://localhost:3000/
 
-## Quick Start (Dev)
-1) Prereqs
-- Node 20+, pnpm (or npm), Wrangler CLI
-- A Postgres DB (Supabase works great)
+## Database setup & sanity checks
 
-2) Configure env
-- Copy `.env.example` → `.env` and fill values.
-- In `web/.env` set `DATABASE_URL`, `APP_BASE_URL`, `CRON_SECRET`, optional email creds.
-
-3) Install and run web
-```bash
-cd web
-pnpm install
-pnpm dev  # Next runs on :3000 or :3001
-```
-
-4) Run Worker
-```bash
-cd worker
-pnpm install
-pnpm dev   # serves http://127.0.0.1:8787
-```
-
-5) Create/verify DB schema
-- Prefer explicit SQL migrations via Supabase SQL editor or psql (see Migrations below).
-- Add performance indexes from `db/sql/indexes.sql`.
-
-6) Test flows
-- Trigger Worker → Web ingest:
-```bash
-curl -H "x-cron-secret: <CRON_SECRET>" http://127.0.0.1:8787/cron
-```
-- Browse: http://localhost:3000/search (or :3001)
+- Prefer explicit SQL migrations via Supabase SQL editor or psql (see Migrations below) to keep the schema aligned with Drizzle definitions.
+- Add performance indexes from `db/sql/indexes.sql` for production-sized datasets.
+- Trigger Worker → Web ingest during local testing to confirm connectivity:
+  ```bash
+  curl -H "x-cron-secret: <CRON_SECRET>" http://127.0.0.1:8787/cron
+  ```
+- Browse http://localhost:3000/search (or :3001) afterward to validate search and watch flows end-to-end.
 
 ## Environment variables
 
@@ -177,6 +160,13 @@ Web cron
   - Purges expired Best Buy rows: `source='bestbuy' AND expires_at < now()`
   - DEV insert is gated behind `ENABLE_DEV_CRON=1` (off in prod)
   - If `BESTBUY_ENABLED=1`, ingests watched Best Buy SKUs via web-side adapter
+
+## Alerts, watches, and analytics
+
+- The authenticated dashboard under `web/app/(app)` surfaces saved watches and recent matches by calling the same REST routes the worker uses (`/api/watches`, `/api/alerts/*`). Server components fetch the session from cookies to ensure watch state is consistent during navigation.
+- Watch creation is available both from the dashboard and the search drawer. Signed-out users can submit an email, receive a magic link, and have their pending watch activated when the token flips to `verified`.
+- The worker’s alert matcher respects ZIP radius filters when comparing fresh inventory against stored watch criteria and records notification attempts through the alert APIs, keeping the web and worker in sync.
+- Client analytics events—search submits, filters, watch creation, outbound clicks—are buffered through `/api/analytics` via a lightweight `track` helper for future instrumentation.
 
 ## Search API & UI
 
@@ -321,3 +311,9 @@ This section describes the current user-facing logic.
 - Robust alerting jobs (email/SMS/Discord) with an alerts ledger and per-user plan limits
 - Stripe-based billing (free vs pro) tied to email identity
 - Replace analytics stub with a provider (PostHog) or your own store
+
+## Suggested learning path
+
+- Read the “Business logic & product behavior” section above to understand current UX, alerting expectations, and pricing features.
+- Explore the retailer adapters in `worker/src/adapters` alongside the scheduler to see how feeds flow into `/api/ingest`.
+- Run the local seed script (`node scripts/seed_dev_items.js`) and experiment with the dashboard to trace a watch from creation through worker ingest and alert matching.
