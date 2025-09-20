@@ -197,7 +197,6 @@ export const Scheduler = {
     if (enableBestBuyStore) {
       const stores = parseStoreConfigs(env.BESTBUY_STORE_IDS, ['bby-123'], buildBestBuyStore);
       const bbResult = await scrapeBestBuyStores(stores, {
-        headless,
         rateLimitMs: Number(env.BESTBUY_RATE_LIMIT_MS || '900'),
       }).catch((err) => {
         console.warn('[scheduler] bestbuy store scrape failed', err);
