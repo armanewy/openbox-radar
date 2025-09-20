@@ -343,3 +343,209 @@ ALERTS_BATCH_SIZE = "500"
 * Voting works; “Most upvoted (24h)” sort available.
 * Free vs Pro watch limits enforced (no payments yet).
 * `/api/health` shows green, CRON runs visible in logs.
+
+
+Absolutely—here’s a **copy-pasteable section** you can drop into `TODO.md` to incorporate the Best Buy (BB) store-level enrichment plan while keeping the rest of your roadmap intact. I’ve matched your file/dir naming and existing patterns from your README/TODO. ([GitHub][1])
+
+---
+
+# Best Buy Store-Level Enrichment (Pins + Local Alerts)
+
+> Goal: keep using the BB Open Box offers feed for breadth, but **enrich specific SKUs on-demand** (ZIP-scoped) to resolve **store-level availability** for pins and precise alerts. Avoid bulk crawling; cache aggressively; prefer official APIs when sufficient.
+
+## 0) Flags & env
+
+* [ ] **web/.env.example**
+
+  ```
+  # enrichment toggles
+  BESTBUY_ENRICHMENT_ENABLED=1
+  BESTBUY_ENRICHMENT_TTL_MIN=30
+  BESTBUY_ENRICHMENT_FAIL_TTL_MIN=10
+  BESTBUY_MAX_ENRICH_RPS=2
+
+  # optional if sending mail from worker instead of web
+  RESEND_API_KEY=
+  ```
+* [ ] **worker/wrangler.toml**
+
+  ```toml
+  [vars]
+  ENABLE_BB_ENRICHMENT = "1"
+  BB_ENRICHMENT_TTL_MIN = "30"
+  BB_ENRICHMENT_FAIL_TTL_MIN = "10"
+  BB_MAX_ENRICH_RPS = "2"
+  # CRON_SHARED_SECRET (secret)
+  # BESTBUY_API_KEY (secret, for official BB APIs if used)
+  # RESEND_API_KEY (secret, optional if worker sends emails)
+  ```
+
+## 1) DB schema
+
+* [ ] **Add enrichment cache table**
+  `web/lib/drizzle/migrations/0028_bb_store_availability.sql`
+
+  ```sql
+  CREATE TABLE IF NOT EXISTS public.bb_store_availability (
+    id bigserial PRIMARY KEY,
+    sku text NOT NULL,
+    zip text NOT NULL,
+    stores jsonb NOT NULL, -- [{id,name,lat,lng,hasOpenBox:boolean}]
+    refreshed_at timestamptz NOT NULL DEFAULT now(),
+    failed boolean NOT NULL DEFAULT false
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_bb_avail_sku_zip
+    ON public.bb_store_availability (sku, zip);
+  CREATE INDEX IF NOT EXISTS idx_bb_avail_refreshed
+    ON public.bb_store_availability (refreshed_at DESC);
+  ```
+
+## 2) Worker enrichment module
+
+* [ ] **Adapter**: `worker/src/enrichers/bestbuy_store_availability.ts`
+
+  * `export async function checkStoresForSKU({ sku, zip }: {sku:string; zip:string})`
+
+    * **Strategy**:
+
+      1. Try **official BB APIs** (Products/Stores/Availability) with `(sku, zip)` to get nearby stores. If open-box signal is included, set `hasOpenBox=true`.
+      2. If official API lacks open-box granularity, **fallback** to the PDP “check store availability” XHR (same JSON used by BB frontend after ZIP is set). Parse minimal JSON → `[ { id, name, lat, lng, hasOpenBox } ]`.
+    * **Rate-limit** by `BB_MAX_ENRICH_RPS`.
+    * **Cache** success for `BB_ENRICHMENT_TTL_MIN` and failures for `BB_ENRICHMENT_FAIL_TTL_MIN`.
+  * **Write-through cache** to `bb_store_availability` with upsert on `(sku, zip)`.
+
+* [ ] **Scheduler endpoints**: extend `worker/src/index.ts`
+
+  * `POST /enrich/bb` (requires `x-cron-secret`) body: `{ sku, zip }` → triggers single enrichment; returns cached or fresh.
+  * Add CRON task `@every 10m` (prod) that **re-enriches hot SKUs**: those with active watches in the last hour.
+
+## 3) Web API surface
+
+* [ ] **Resolve endpoint**: `web/app/api/bestbuy/availability/route.ts`
+
+  * `GET ?sku=...&zip=...`
+  * Checks local DB cache (`bb_store_availability`); if stale **and** `BESTBUY_ENRICHMENT_ENABLED=1`, call worker `POST /enrich/bb` with `x-cron-secret`, then return the fresh doc.
+  * Response:
+
+    ```json
+    {
+      "sku": "1234567",
+      "zip": "02139",
+      "refreshed_at": "2025-09-20T13:37:00Z",
+      "stores": [{ "id":"####", "name":"Best Buy Dedham", "lat":42.24, "lng":-71.17, "hasOpenBox": true }]
+    }
+    ```
+
+## 4) Watch flow integration (local alerts)
+
+* [ ] **Watches table already extended** (zip/radius/price ceiling). When a user **creates or edits** a watch with `sku` **and** `zip`:
+
+  * [ ] **Kick enrichment**: server-side call to `web/api/bestbuy/availability` to warm cache.
+  * [ ] Store `zip` on the watch; if stores come back, keep them alongside watch (optional denorm).
+
+* [ ] **Alert matcher** (worker): in `worker/src/alerts/matcher.ts`
+
+  * If retailer is `bestbuy` and watch has `zip`:
+
+    * Confirm an open-box offer exists **today** (your current BB ingest already ensures national availability).
+    * Join with `bb_store_availability (sku, zip)`; if `stores[].hasOpenBox == true` for any store within radius, **emit a local alert** (“Available at <StoreName>”) and record in `alert_events`.
+
+## 5) UI/UX changes
+
+* [ ] **ItemCard** & **Search results**
+
+  * For BB items:
+
+    * If no enrichment available for user ZIP → badge **“📦 Online only”**; no pin on map.
+    * If enrichment exists and not stale → show **“Local availability verified <x>m ago”**; enable pins.
+
+* [ ] **Item Drawer** (`PriceHistoryChart` drawer or Item detail)
+
+  * Add **“Check local availability”** action if user has ZIP set; hit `web/api/bestbuy/availability?sku=...`.
+  * Show nearest stores with distance (reuse `milesBetween`) and `hasOpenBox` pills.
+
+* [ ] **Map**
+
+  * Do **not** pin BB items unless enriched; pin only the returned stores with `hasOpenBox=true`.
+  * Legend:
+
+    * Solid pin = local verified.
+    * Hollow pin = other retailers with store coords (as you already do).
+    * No pin = online only.
+
+## 6) Abuse prevention & consistency
+
+* [ ] **Backoff** and **jitter** on enrichment failures; mark `failed=true` to avoid loops.
+* [ ] **Per-(sku, zip)** lock to avoid stampede (in-process mutex or Redis later).
+* [ ] **Audit log**: add structured logs for every enrichment attempt (source=bb\_enrichment, sku, zip, ms, ok/fail, cache\_hit).
+
+## 7) Tests / manual checks
+
+* [ ] Unit: parser for PDP availability JSON → `[stores]`.
+* [ ] Unit: enrichment cache TTL behavior (fresh vs stale vs fail).
+* [ ] E2E (dev):
+
+  1. Create watch (`sku=…`, `zip=02139`, radius=25).
+  2. Trigger `curl -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:8787/alerts`
+  3. Expect **local** alert if any verified store in radius; otherwise fallback **online** alert.
+
+## 8) README notes
+
+* [ ] In **Notes & limitations**, add:
+
+  * “Best Buy Open Box offers are national (‘online’) by default. **Store-level pins require on-demand enrichment** for specific `(SKU, ZIP)` pairs. When available, we show ‘Local availability verified <x>m ago’; otherwise items are labeled ‘Online only’ and **not** pinned on the map.”
+
+---
+
+### Dev snippets to wire fast
+
+**Route (web): `web/app/api/bestbuy/availability/route.ts` (sketch)**
+
+```ts
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/drizzle/db';
+import { bbStoreAvailability } from '@/lib/drizzle/schema'; // add model
+import { isStale } from '@/lib/time';
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const sku = searchParams.get('sku');
+  const zip = searchParams.get('zip');
+  if (!sku || !zip) return NextResponse.json({ error: 'sku & zip required' }, { status: 400 });
+
+  const ttlMin = Number(process.env.BESTBUY_ENRICHMENT_TTL_MIN ?? 30);
+  const row = await db.query.bbStoreAvailability.findFirst({ where: (t, { eq, and }) => and(eq(t.sku, sku), eq(t.zip, zip)) });
+
+  const stale = !row || isStale(row.refreshed_at, ttlMin) || row.failed;
+  if (stale && process.env.BESTBUY_ENRICHMENT_ENABLED === '1') {
+    await fetch(process.env.WORKER_BASE_URL + '/enrich/bb', {
+      method: 'POST',
+      headers: { 'x-cron-secret': process.env.CRON_SECRET!, 'content-type': 'application/json' },
+      body: JSON.stringify({ sku, zip }),
+    }).catch(() => {});
+  }
+
+  const fresh = row ? {
+    sku, zip, refreshed_at: row.refreshed_at, stores: row.stores
+  } : { sku, zip, refreshed_at: null, stores: [] };
+
+  return NextResponse.json(fresh);
+}
+```
+
+**Worker (sketch call signature):**
+
+```ts
+// worker/src/enrichers/bestbuy_store_availability.ts
+export async function checkStoresForSKU({ sku, zip }: { sku: string; zip: string }) {
+  // 1) try official APIs with BESTBUY_API_KEY
+  // 2) else fallback to PDP availability XHR (parse JSON)
+  // 3) return { stores, failed:false }  or { stores:[], failed:true }
+}
+```
+
+---
+
+This slots neatly into your existing ingestion/search/watch/alerts flow, keeps UX honest (no fake pins), and unlocks **precise local alerts** where they matter most—without reworking your entire BB pipeline. If you want, I can also generate the exact Drizzle model updates for `bb_store_availability` and add the minimal React pieces for the “Check local availability” button in your Item drawer.
+
+[1]: https://github.com/armanewy/openbox-radar/blob/main/README.md "openbox-radar/README.md at main · armanewy/openbox-radar · GitHub"
