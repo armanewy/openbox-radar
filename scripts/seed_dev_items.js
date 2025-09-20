@@ -26,6 +26,16 @@ async function main() {
       url: 'https://www.bestbuy.com/site/sku/DEV-BBY-001.p',
       seenAt: new Date().toISOString(),
     },
+    {
+      retailer: 'newegg',
+      storeId: 'newegg-online',
+      sku: 'DEV-NE-001',
+      title: 'DEV Newegg Open-Box GPU',
+      conditionLabel: 'Open-Box',
+      priceCents: 42999,
+      url: 'https://www.newegg.com/p/DEV-NE-001',
+      seenAt: new Date().toISOString(),
+    },
   ];
 
   const r = await fetch(INGEST, {

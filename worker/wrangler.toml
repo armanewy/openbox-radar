@@ -15,6 +15,7 @@ enabled = true
 # If your Next runs on :3001, change to http://localhost:3001/api/ingest
 INGEST_URL = "https://openboxradar.com/api/ingest"
 USE_REAL_MICROCENTER = "1"
+MICROCENTER_STORE_IDS = "mc-cambridge"
 USE_REAL_BESTBUY = "1"
 USE_REAL_NEWEGG = "0"
 ALLOW_DEV_STUBS = "0"

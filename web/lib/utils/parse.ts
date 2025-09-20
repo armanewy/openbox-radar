@@ -1,4 +1,4 @@
-export function parseProductUrl(raw: string | null): { retailer?: 'bestbuy'|'microcenter'; sku?: string } | null {
+export function parseProductUrl(raw: string | null): { retailer?: 'bestbuy'|'microcenter'|'newegg'; sku?: string } | null {
   if (!raw) return null;
   let url: URL;
   try { url = new URL(raw); } catch { return null; }
@@ -18,6 +18,13 @@ export function parseProductUrl(raw: string | null): { retailer?: 'bestbuy'|'mic
     const m = url.pathname.match(/product\/(\d{5,9})/i);
     if (m?.[1]) return { retailer: 'microcenter', sku: m[1] };
     return { retailer: 'microcenter' };
+  }
+  if (host.includes('newegg.com')) {
+    const sku = url.searchParams.get('Item') || url.searchParams.get('item');
+    if (sku) return { retailer: 'newegg', sku };
+    const pathMatch = url.pathname.match(/\/([^/]*N[A-Z0-9]{2,})/i);
+    if (pathMatch?.[1]) return { retailer: 'newegg', sku: pathMatch[1].toUpperCase() };
+    return { retailer: 'newegg' };
   }
   return null;
 }

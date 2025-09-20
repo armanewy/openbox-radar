@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 type Row = {
-  retailer: 'bestbuy' | 'microcenter';
+  retailer: 'bestbuy' | 'microcenter' | 'newegg';
   store_id: string;
   name: string;
   zipcode?: string;
@@ -23,7 +23,7 @@ async function run() {
   ];
   const root = roots.find((p) => fs.existsSync(p)) ?? roots[0];
 
-  const files = ['stores.bestbuy.json', 'stores.microcenter.json'];
+  const files = ['stores.bestbuy.json', 'stores.microcenter.json', 'stores.newegg.json'];
   for (const f of files) {
     const rows: Row[] = JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
     for (const r of rows) {

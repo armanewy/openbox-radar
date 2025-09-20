@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
 export type WatchPayload = {
-  retailer: "bestbuy" | "microcenter";
+  retailer: "bestbuy" | "microcenter" | "newegg";
   sku?: string;
   product_url?: string;
   keywords?: string[];

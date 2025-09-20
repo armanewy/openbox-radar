@@ -56,6 +56,14 @@ export default function SearchHero({ subtitle }: Props) {
         >Micro Center</button>
         <button
           onClick={() => {
+            const next = retailer === 'newegg' ? '' : 'newegg';
+            setRetailer(next);
+            router.push(`/search?${buildQuery(next, minCondition, q)}`);
+          }}
+          className={`px-3 py-1.5 rounded-full border ${retailer === 'newegg' ? 'bg-brand text-black' : 'bg-white'}`}
+        >Newegg</button>
+        <button
+          onClick={() => {
             const next = minCondition === 'excellent' ? '' : 'excellent';
             setMinCondition(next);
             router.push(`/search?${buildQuery(retailer, next, q)}`);

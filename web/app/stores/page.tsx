@@ -4,6 +4,7 @@ export default function StoresIndex() {
   const retailers = [
     { id: "bestbuy", name: "Best Buy" },
     { id: "microcenter", name: "Micro Center" },
+    { id: "newegg", name: "Newegg" },
   ];
   return (
     <main className="max-w-3xl mx-auto p-8 space-y-6">
