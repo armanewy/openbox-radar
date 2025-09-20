@@ -53,25 +53,38 @@ function attrFrom(card: any, selectors: string[], attr: string): string {
   return '';
 }
 
-async function loadStoreDocument(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'user-agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'accept-language': 'en-US,en;q=0.9',
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to load Best Buy store page: ${res.status} ${res.statusText}`);
+async function loadStoreDocument(url: string, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'user-agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'accept-language': 'en-US,en;q=0.9',
+      },
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to load Best Buy store page: ${res.status} ${res.statusText}`);
+    }
+    const html = await res.text();
+    const { document } = parseHTML(html);
+    return document;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error(`Best Buy store page fetch timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
-  const html = await res.text();
-  const { document } = parseHTML(html);
-  return document;
 }
 
 export type BestBuyScrapeOptions = {
   rateLimitMs?: number;
+  requestTimeoutMs?: number;
 };
 
 export async function scrapeBestBuyStores(
@@ -83,6 +96,7 @@ export async function scrapeBestBuyStores(
   }
 
   const rateLimit = options.rateLimitMs ?? 900;
+  const requestTimeout = options.requestTimeoutMs ?? 45_000;
 
   const items: IngestPayload[] = [];
   const metrics: StoreScrapeResult['metrics'] = [];
@@ -92,7 +106,7 @@ export async function scrapeBestBuyStores(
     const before = items.length;
     const meta = toStoreMeta(store);
     await withRateLimit(async () => {
-      const document = await loadStoreDocument(store.url);
+      const document = await loadStoreDocument(store.url, requestTimeout);
       const cards = Array.from(
         document.querySelectorAll('.sku-item, article.sku-item, li.sku-item, [data-sku-id]'),
       );
