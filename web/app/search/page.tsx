@@ -94,7 +94,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
 
   const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
-  const initialCount = data.items.length;
   return (
     <main className="container mx-auto max-w-7xl p-4 md:p-6 grid grid-cols-12 gap-6">
       <aside className="col-span-12 md:col-span-3">
@@ -108,7 +107,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
 
       <section className="col-span-12 md:col-span-9">
         <div className="flex items-center justify-between mb-3 gap-3">
-          <h1 className="text-xl font-semibold">Results ({initialCount}{data.nextCursor ? '+' : ''})</h1>
+          <h1 className="text-xl font-semibold">Results</h1>
           <div className="flex items-center gap-2">
             <SortMenu />
             <SaveSearchButton params={{

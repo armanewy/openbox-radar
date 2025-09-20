@@ -116,7 +116,7 @@ export default function ItemCard({ item }: { item: Item }) {
       storedZip = localStorage.getItem('obr_zip') || '';
     } catch {}
     if (!storedZip) {
-      setAvailabilityError('Set a ZIP via the Near You card to check local availability.');
+      setAvailabilityError('Add a ZIP in the search filters to check local availability.');
       return;
     }
     setAvailabilityError('');
