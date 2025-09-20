@@ -74,10 +74,86 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   }
   if (!qp.has("limit")) qp.set("limit", "20");
 
-  const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
-    cache: "no-store",
-  });
-  const data = (await res.json()) as { items: Item[]; nextCursor?: string | null };
+  let data: { items: Item[]; nextCursor?: string | null } = { items: [], nextCursor: null };
+  let errorMessage: string | null = null;
+
+  try {
+    const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
+      cache: "no-store",
+      // Ensure server fetch regardless of deployment
+      next: { revalidate: 0 },
+    });
+
+    const contentType = res.headers.get("content-type") ?? "";
+    const normalizedType = contentType.toLowerCase();
+    const bodyText = await res.text();
+    const bodyTrimmed = bodyText.trim();
+
+    if (!res.ok) {
+      let detail = "";
+
+      if (bodyTrimmed.length) {
+        if (normalizedType.includes("application/json")) {
+          try {
+            const parsed = JSON.parse(bodyTrimmed);
+            if (parsed && typeof parsed === "object") {
+              const maybeError = (parsed as { error?: unknown }).error;
+              if (typeof maybeError === "string" && maybeError.trim().length) {
+                detail = maybeError.trim();
+              }
+            }
+          } catch {
+            // ignore JSON parse failures for error payloads
+          }
+        }
+
+        if (!detail) {
+          detail = bodyTrimmed.slice(0, 200);
+        }
+      }
+
+      const statusMessage = `Search request failed with status ${res.status}`;
+      throw new Error(detail.length ? `${statusMessage}: ${detail}` : statusMessage);
+    }
+
+    if (!bodyTrimmed.length) {
+      data = { items: [], nextCursor: null };
+    } else if (!normalizedType.includes("application/json")) {
+      throw new Error("Search response was not valid JSON");
+    } else {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(bodyText) as { items?: unknown; nextCursor?: unknown };
+      } catch {
+        throw new Error("Search response could not be parsed as JSON");
+      }
+
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("Search response was not structured as expected");
+      }
+
+      const items = Array.isArray((parsed as { items?: unknown }).items)
+        ? ((parsed as { items?: unknown }).items as Item[])
+        : [];
+      const nextCursorValue = (parsed as { nextCursor?: unknown }).nextCursor;
+      const nextCursor = typeof nextCursorValue === "string" || nextCursorValue == null
+        ? (nextCursorValue ?? null)
+        : null;
+
+      data = { items, nextCursor };
+    }
+  } catch (error) {
+    console.error("Failed to load search results", error);
+    const fallbackMessage = "We couldn't load the latest listings. Please try again.";
+    if (error instanceof Error && error.message.length) {
+      const trimmed = error.message.trim();
+      errorMessage = trimmed.length && trimmed !== fallbackMessage
+        ? `${fallbackMessage} (${trimmed})`
+        : fallbackMessage;
+    } else {
+      errorMessage = fallbackMessage;
+    }
+  }
 
   const q = typeof searchParams.q === "string" ? searchParams.q : "";
   const retailer = typeof searchParams.retailer === "string" ? searchParams.retailer : "";
@@ -89,6 +165,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const radius_miles = typeof searchParams.radius_miles === "string" ? searchParams.radius_miles : "";
 
   const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles };
+
+  const showEmptyState = !errorMessage && data.items.length === 0;
 
   const hasBestBuy = data.items.some((it) => it.retailer === 'bestbuy');
 
@@ -123,7 +201,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
         </div>
         <FilterChips />
 
-        {data.items.length === 0 && (
+        {errorMessage ? (
+          <div className="text-gray-700 border rounded-xl p-6 bg-white/60">
+            <div className="font-semibold mb-1">Unable to load results</div>
+            <p className="text-sm">{errorMessage}</p>
+          </div>
+        ) : null}
+
+        {showEmptyState && (
           <div className="text-gray-700 border rounded-xl p-6 bg-white/60">
             <div className="font-semibold mb-1">No results</div>
             <p className="text-sm mb-3">Try clearing filters or using broader keywords.</p>
@@ -135,14 +220,16 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
           </div>
         )}
 
-        <InfiniteList
-          fetchUrl={absoluteUrl('/api/inventory/search')}
-          baseParams={baseParams}
-          initialItems={data.items}
-          initialNextCursor={data.nextCursor}
-        />
+        {!errorMessage ? (
+          <InfiniteList
+            fetchUrl={absoluteUrl('/api/inventory/search')}
+            baseParams={baseParams}
+            initialItems={data.items}
+            initialNextCursor={data.nextCursor}
+          />
+        ) : null}
 
-        {hasBestBuy ? <BestBuyAttribution /> : null}
+        {!errorMessage && hasBestBuy ? <BestBuyAttribution /> : null}
       </section>
     </main>
   );
