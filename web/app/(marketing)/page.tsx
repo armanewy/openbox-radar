@@ -8,7 +8,7 @@ type Item = { id: number; title: string; price_cents: number; url: string };
 function dollars(n: number) { return `$${(n/100).toFixed(2)}`; }
 
 async function fetchDrops(): Promise<Item[]> {
-  const res = await fetch(absoluteUrl('/api/inventory/trending?type=drops&limit=8'), { cache: 'no-store', next: { revalidate: 0 } });
+  const res = await fetch(absoluteUrl('/api/inventory/trending?type=drops&limit=8'), { cache: 'no-store' });
   const json = await res.json();
   return (json.items || []) as Item[];
 }
