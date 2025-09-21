@@ -3,11 +3,150 @@ import { fetchBestBuyOpenBoxBySkus, fetchBestBuyOpenBoxByCategory } from './adap
 import { fetchMicroCenterOpenBoxDOM } from './adapters/microcenter_dom';
 import { fetchNeweggClearance } from './adapters/newegg_clearance';
 import { getBestBuyStoreAvailability } from './enrichers/bestbuy_store_availability';
-import { scrapeMicroCenterStores } from './sources/microcenter/storeScraper';
-import { scrapeBestBuyStores } from './sources/bestbuy/storeScraper';
-import type { StoreConfig } from './sources/types';
+import type { ScrapeMetrics, StoreConfig } from './sources/types';
 import { postIngest, type IngestPayload } from './ingest';
-import { classifyProductType } from './util/classify';
+import { classifyProductType, type ProductType } from './util/classify';
+
+type ScraperItem = {
+  source?: string;
+  channel?: string;
+  confidence?: string;
+  retailer_store_id?: string;
+  retailer_store_name?: string;
+  retailer_store_city?: string;
+  retailer_store_state?: string;
+  sku?: string;
+  title: string;
+  product_type?: string;
+  condition?: string;
+  price_cents?: number;
+  url: string;
+  image_url?: string;
+  last_seen_at?: string;
+};
+
+const PRODUCT_TYPES: readonly ProductType[] = [
+  'LAPTOP',
+  'DESKTOP',
+  'MONITOR',
+  'TV',
+  'GPU',
+  'CPU',
+  'CONSOLE',
+  'STORAGE',
+  'NETWORKING',
+  'PERIPHERAL',
+  'TABLET',
+  'PHONE',
+  'AUDIO',
+  'CAMERA',
+  'OTHER',
+];
+
+function isProductType(input: string | undefined | null): input is ProductType {
+  if (!input) return false;
+  return PRODUCT_TYPES.includes(input as ProductType);
+}
+
+function coerceProductType(scraped: string | undefined, title: string): ProductType {
+  if (isProductType(scraped)) return scraped;
+  return classifyProductType(title);
+}
+
+function conditionLabelFromScraper(condition: string | undefined): string {
+  switch ((condition || '').toUpperCase()) {
+    case 'OPEN_BOX':
+      return 'Open-Box';
+    case 'REFURB':
+      return 'Refurbished';
+    case 'CLEARANCE':
+      return 'Clearance';
+    default:
+      return 'Open-Box';
+  }
+}
+
+function retailerFromSource(source: string | undefined): string {
+  if (!source) return 'unknown';
+  if (source.startsWith('bestbuy')) return 'bestbuy';
+  if (source.startsWith('microcenter')) return 'microcenter';
+  if (source.startsWith('newegg')) return 'newegg';
+  const [prefix] = source.split('-');
+  return prefix || source;
+}
+
+async function fetchScraperService(
+  env: any,
+  endpoint: string,
+  stores: StoreConfig[]
+): Promise<{ items: IngestPayload[]; metrics: ScrapeMetrics[] }> {
+  const baseUrl = (env.SCRAPER_URL || '').replace(/\/$/, '');
+  const secret = env.SCRAPER_SECRET;
+  if (!baseUrl) {
+    throw new Error('SCRAPER_URL is not configured');
+  }
+  if (!secret) {
+    throw new Error('SCRAPER_SECRET is not configured');
+  }
+
+  const res = await fetch(`${baseUrl}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-scrape-secret': secret,
+    },
+    body: JSON.stringify({ stores }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Scraper service ${endpoint} failed: ${res.status} ${text}`);
+  }
+
+  const data = (await res.json()) as ScraperItem[];
+  const storeMap = new Map<string, StoreConfig>();
+  stores.forEach((store) => storeMap.set(store.id, store));
+
+  const counts = new Map<string, number>();
+  const items: IngestPayload[] = [];
+
+  for (const item of data) {
+    if (!item || !item.title || !item.url) continue;
+    const storeId = item.retailer_store_id || 'unknown';
+    const storeConfig = storeMap.get(storeId);
+    counts.set(storeId, (counts.get(storeId) || 0) + 1);
+
+    items.push({
+      retailer: retailerFromSource(item.source),
+      storeId,
+      sku: item.sku || undefined,
+      title: item.title,
+      productType: coerceProductType(item.product_type, item.title),
+      conditionLabel: conditionLabelFromScraper(item.condition),
+      priceCents: typeof item.price_cents === 'number' ? item.price_cents : 0,
+      url: item.url,
+      seenAt: item.last_seen_at,
+      imageUrl: item.image_url,
+      source: item.source,
+      channel: item.channel,
+      confidence: item.confidence,
+      storeName: item.retailer_store_name || storeConfig?.name,
+      storeCity: item.retailer_store_city || storeConfig?.city,
+      storeState: item.retailer_store_state || storeConfig?.state,
+    });
+  }
+
+  const metrics: ScrapeMetrics[] = Array.from(counts.entries()).map(([storeId, count]) => {
+    const cfg = storeMap.get(storeId);
+    return {
+      storeId,
+      count,
+      url: cfg?.url || '',
+    };
+  });
+
+  return { items, metrics };
+}
 
 function baseUrlFromIngest(ingestUrl: string): string {
   try {
@@ -145,17 +284,13 @@ export const Scheduler = {
     const useMicroCenterDom = env.USE_REAL_MICROCENTER === '1';
     const useNewegg = env.USE_REAL_NEWEGG === '1';
 
-    const headless = env.PLAYWRIGHT_HEADLESS !== '0';
     const ingestItems: IngestPayload[] = [];
     const sources: Array<{ storeId: string; count: number; url?: string }> = [];
 
     // Micro Center store scrape
     if (enableMicroCenterStore) {
       const stores = parseStoreConfigs(env.MICROCENTER_STORE_IDS, ['mc-cambridge'], buildMicroCenterStore);
-      const mcResult = await scrapeMicroCenterStores(stores, {
-        headless,
-        rateLimitMs: Number(env.MICROCENTER_RATE_LIMIT_MS || '1000'),
-      }).catch((err) => {
+      const mcResult = await fetchScraperService(env, '/scrape/microcenter-store', stores).catch((err) => {
         console.warn('[scheduler] microcenter scrape failed', err);
         return { items: [], metrics: [] };
       });
@@ -198,9 +333,7 @@ export const Scheduler = {
     // Best Buy store scrape
     if (enableBestBuyStore) {
       const stores = parseStoreConfigs(env.BESTBUY_STORE_IDS, ['bby-123'], buildBestBuyStore);
-      const bbResult = await scrapeBestBuyStores(stores, {
-        rateLimitMs: Number(env.BESTBUY_RATE_LIMIT_MS || '900'),
-      }).catch((err) => {
+      const bbResult = await fetchScraperService(env, '/scrape/bestbuy-store', stores).catch((err) => {
         console.warn('[scheduler] bestbuy store scrape failed', err);
         return { items: [], metrics: [] };
       });
