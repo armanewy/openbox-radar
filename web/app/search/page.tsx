@@ -8,6 +8,14 @@ import FilterDrawer from "@/components/FilterDrawer";
 import SearchFiltersForm from "@/components/SearchFiltersForm";
 import SaveSearchButton from "@/components/SaveSearchButton";
 
+const QUICK_TYPE_FILTERS = [
+  { value: 'LAPTOP', label: 'Laptops' },
+  { value: 'MONITOR', label: 'Monitors' },
+  { value: 'GPU', label: 'GPUs' },
+  { value: 'TV', label: 'TVs' },
+  { value: 'CONSOLE', label: 'Consoles' },
+];
+
 type Item = {
   id: number;
   retailer: string;
@@ -20,6 +28,9 @@ type Item = {
   url: string;
   image_url: string | null;
   seen_at: string;
+  product_type?: string | null;
+  channel?: string | null;
+  confidence?: string | null;
   distance_miles?: number | null;
   store_lat?: number | null;
   store_lng?: number | null;
@@ -55,10 +66,17 @@ function stalenessColor(iso: string) {
   return "bg-gray-400";
 }
 
-function buildQuery(params: Record<string, string | undefined | null>) {
+function buildQuery(params: Record<string, string | string[] | undefined | null>) {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && String(v).length) u.set(k, String(v));
+    if (Array.isArray(v)) {
+      v
+        .map((entry) => entry?.toString().trim())
+        .filter((entry): entry is string => !!entry && entry.length > 0)
+        .forEach((entry) => u.append(k, entry));
+    } else if (v !== undefined && v !== null && String(v).length) {
+      u.set(k, String(v));
+    }
   }
   return u.toString();
 }
@@ -161,8 +179,20 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   const price_max = typeof searchParams.price_max === "string" ? searchParams.price_max : ""; // USD
   const zip = typeof searchParams.zip === "string" ? searchParams.zip : "";
   const radius_miles = typeof searchParams.radius_miles === "string" ? searchParams.radius_miles : "";
+  const rawProductType = searchParams.product_type;
+  const product_types = Array.isArray(rawProductType)
+    ? rawProductType
+        .flatMap((value) => value.split(',').map((s) => s.trim()))
+        .filter((value) => value.length)
+    : typeof rawProductType === 'string'
+      ? rawProductType
+          .split(',')
+          .map((s) => s.trim())
+          .filter((value) => value.length)
+      : [];
+  const uniqueProductTypes = Array.from(new Set(product_types));
 
-  const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles };
+  const baseParams = { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles, product_type: uniqueProductTypes };
 
   const showEmptyState = !errorMessage && data.items.length === 0;
 
@@ -172,10 +202,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
     <main className="container mx-auto max-w-7xl p-4 md:p-6 grid grid-cols-12 gap-6">
       <aside className="col-span-12 md:col-span-3">
         <FilterDrawer>
-          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
+          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} product_types={uniqueProductTypes} />
         </FilterDrawer>
         <div className="hidden md:block sticky top-3 border border-gray-300 rounded-xl p-4 space-y-3 bg-white shadow">
-          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} />
+          <SearchFiltersForm q={q} retailer={retailer} sku={sku} min_condition={min_condition} price_min={price_min} price_max={price_max} zip={zip} radius_miles={radius_miles} product_types={uniqueProductTypes} />
         </div>
       </aside>
 
@@ -195,9 +225,30 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
               radius_miles,
               store_id: typeof searchParams.store_id === 'string' ? searchParams.store_id : ''
             }} />
-          </div>
         </div>
+      </div>
         <FilterChips />
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {QUICK_TYPE_FILTERS.map((opt) => {
+            const isActive = uniqueProductTypes.length === 1 && uniqueProductTypes[0] === opt.value;
+            const next = new URLSearchParams(qp.toString());
+            next.delete('cursor');
+            next.delete('product_type');
+            if (!isActive) {
+              next.append('product_type', opt.value);
+            }
+            const href = `/search?${next.toString()}`;
+            return (
+              <Link
+                key={opt.value}
+                href={href}
+                className={`rounded-full border px-3 py-1 text-sm transition ${isActive ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-700'}`}
+              >
+                {opt.label}
+              </Link>
+            );
+          })}
+        </div>
 
         {errorMessage ? (
           <div className="text-gray-700 border rounded-xl p-6 bg-white/60">

@@ -34,6 +34,17 @@ function parseMulti(param: string | null): string[] | null {
   return parts.length ? parts : null;
 }
 
+function parseMultiParam(params: URLSearchParams, key: string): string[] | null {
+  const raw = params.getAll(key);
+  if (raw.length > 1) {
+    const combined = raw
+      .flatMap((value) => parseMulti(value) ?? [])
+      .filter(Boolean);
+    return combined.length ? Array.from(new Set(combined)) : null;
+  }
+  return parseMulti(params.get(key));
+}
+
 function getBaseUrl(req: NextRequest) {
   if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL;
   const proto = req.headers.get('x-forwarded-proto') ?? req.nextUrl.protocol.replace(':', '') ?? 'http';
@@ -49,6 +60,7 @@ export async function GET(req: NextRequest) {
   const storeParam = url.searchParams.getAll("store_id").join(",") || url.searchParams.get("store_id");
   const storeIds = parseMulti(storeParam);
   const minCondition = url.searchParams.get("min_condition");
+  const productTypes = parseMultiParam(url.searchParams, "product_type");
   const priceMinRaw = url.searchParams.get("price_min");
   const priceMaxRaw = url.searchParams.get("price_max");
   // Interpret price_min/max as USD and convert to cents if present
@@ -70,6 +82,7 @@ export async function GET(req: NextRequest) {
     priceMin != null ? gte(inventory.price_cents, priceMin) : undefined,
     priceMax != null ? lte(inventory.price_cents, priceMax) : undefined,
     minCondition ? gte(inventory.condition_rank as any, minCondition as any) : undefined,
+    productTypes && productTypes.length ? inArray(inventory.product_type, productTypes as any) : undefined,
     // Cursor pagination: (seen_at, id) tuple less-than the cursor
     cursor
       ? or(
@@ -108,6 +121,9 @@ export async function GET(req: NextRequest) {
       store_zip: stores.zipcode,
       store_lat: stores.lat as any,
       store_lng: stores.lng as any,
+      product_type: inventory.product_type,
+      channel: inventory.channel,
+      confidence: inventory.confidence,
     })
     .from(inventory)
     .leftJoin(
@@ -211,6 +227,9 @@ export async function GET(req: NextRequest) {
       url: r.url,
       seen_at: r.seen_at,
       image_url: r.image_url,
+      product_type: r.product_type,
+      channel: r.channel,
+      confidence: r.confidence,
       distance_miles: (r as any)._distance_miles,
       store_lat: (r as any).store_lat ?? null,
       store_lng: (r as any).store_lng ?? null,

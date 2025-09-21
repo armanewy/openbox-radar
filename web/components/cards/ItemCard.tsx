@@ -11,6 +11,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { m, useReducedMotion } from "framer-motion";
 import { track } from "@/lib/analytics";
+import { formatProductType } from "@/lib/productTypes";
 
 export type Item = {
   id: number;
@@ -24,6 +25,9 @@ export type Item = {
   url: string;
   image_url: string | null;
   seen_at: string;
+  product_type?: string | null;
+  channel?: string | null;
+  confidence?: string | null;
   distance_miles?: number | null;
   enrichment?: {
     status: "online" | "verifying" | "local";
@@ -100,6 +104,19 @@ export default function ItemCard({ item }: { item: Item }) {
   const [availabilityError, setAvailabilityError] = useState<string>("");
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const reduce = useReducedMotion();
+
+  const channelLabel = (item.channel || 'store') === 'online' ? 'Online' : 'In-Store';
+  const locationLabel = (() => {
+    if (channelLabel === 'Online') return channelLabel;
+    const parts: string[] = [channelLabel];
+    if (item.store?.city) {
+      const location = item.store.state ? `${item.store.city}, ${item.store.state}` : item.store.city;
+      parts.push(location);
+    }
+    return parts.join(' • ');
+  })();
+  const conditionBadge = (item.condition_label || '').toUpperCase() || 'OPEN-BOX';
+  const productBadge = formatProductType(item.product_type).toUpperCase();
 
   async function upvote() {
     if (voted) return;
@@ -275,6 +292,17 @@ export default function ItemCard({ item }: { item: Item }) {
             <span className="font-medium text-gray-700">{item.store?.name || item.store_id}</span>
             {item.store?.city ? ` • ${item.store.city}, ${item.store.state ?? ''}` : ''}
             {typeof item.distance_miles === 'number' ? ` • ${item.distance_miles.toFixed(1)} mi away` : ''}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <Badge className="border border-emerald-200 bg-emerald-50 px-2 py-1 font-medium text-emerald-700">
+              {locationLabel}
+            </Badge>
+            <Badge className="border border-gray-200 bg-gray-100 px-2 py-1 font-medium text-gray-700">
+              {conditionBadge}
+            </Badge>
+            <Badge className="border border-indigo-200 bg-indigo-50 px-2 py-1 font-medium text-indigo-700">
+              {productBadge}
+            </Badge>
           </div>
         </div>
       </div>

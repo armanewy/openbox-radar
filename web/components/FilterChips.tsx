@@ -1,7 +1,10 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PRODUCT_TYPE_OPTIONS } from "@/lib/productTypes";
 
-type Chip = { key: string; label: string; value: string };
+type Chip = { key: string; label: string; value: string; onRemove?: (params: URLSearchParams) => void };
+
+const PRODUCT_TYPE_LABEL = new Map(PRODUCT_TYPE_OPTIONS.map((opt) => [opt.value, opt.label] as const));
 
 function buildChips(sp: URLSearchParams): Chip[] {
   const chips: Chip[] = [];
@@ -17,6 +20,28 @@ function buildChips(sp: URLSearchParams): Chip[] {
   ];
   for (const [k, label, v] of pairs) {
     if (v) chips.push({ key: k, label, value: v });
+  }
+
+  const rawTypes = sp.getAll("product_type");
+  const values = rawTypes
+    .flatMap((entry) => entry.split(',').map((s) => s.trim()))
+    .filter((v) => v.length);
+  const unique = Array.from(new Set(values));
+  for (const v of unique) {
+    const display = PRODUCT_TYPE_LABEL.get(v) || v;
+    chips.push({
+      key: `product_type:${v}`,
+      label: "Product",
+      value: display,
+      onRemove: (next) => {
+        const remaining = next
+          .getAll("product_type")
+          .flatMap((entry) => entry.split(',').map((s) => s.trim()))
+          .filter((value) => value.length && value !== v);
+        next.delete("product_type");
+        remaining.forEach((value) => next.append("product_type", value));
+      },
+    });
   }
   return chips;
 }
@@ -35,7 +60,8 @@ export default function FilterChips() {
           title={`Remove ${c.label}`}
           onClick={() => {
             const next = new URLSearchParams(searchParams.toString());
-            next.delete(c.key);
+            if (c.onRemove) c.onRemove(next);
+            else next.delete(c.key);
             next.delete("cursor");
             router.push(`/search?${next.toString()}`);
           }}

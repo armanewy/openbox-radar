@@ -1,5 +1,6 @@
 import { parseHTML } from 'linkedom';
 import { withRateLimit } from '../../util/rate';
+import { classifyProductType } from '../../util/classify';
 import type { IngestPayload } from '../../ingest';
 import type { StoreConfig } from '../types';
 import type { StoreScrapeResult } from '../result';
@@ -134,6 +135,7 @@ export async function scrapeBestBuyStores(
           ...meta,
           sku: skuAttr || undefined,
           title,
+          productType: classifyProductType(title),
           priceCents,
           conditionLabel: 'Open-Box',
           url: resolvedUrl,

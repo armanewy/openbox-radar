@@ -42,6 +42,9 @@ export async function GET(req: NextRequest) {
       url: r.url,
       image_url: r.image_url,
       seen_at: r.seen_at,
+      product_type: r.product_type,
+      channel: r.channel,
+      confidence: r.confidence,
       drop_cents: Number(r.drop_cents ?? 0),
       store: { name: r.store_name, city: r.store_city, state: r.store_state, zipcode: r.store_zip },
     }));
@@ -61,6 +64,9 @@ export async function GET(req: NextRequest) {
       url: inventory.url,
       image_url: inventory.image_url,
       seen_at: inventory.seen_at,
+      product_type: inventory.product_type,
+      channel: inventory.channel,
+      confidence: inventory.confidence,
       store_name: stores.name,
       store_city: stores.city,
       store_state: stores.state,
@@ -87,6 +93,9 @@ export async function GET(req: NextRequest) {
     url: r.url,
     image_url: r.image_url,
     seen_at: r.seen_at,
+    product_type: r.product_type,
+    channel: r.channel,
+    confidence: r.confidence,
     store: { name: r.store_name, city: r.store_city, state: r.store_state, zipcode: r.store_zip },
   }));
   return NextResponse.json({ items, type: "recent" });

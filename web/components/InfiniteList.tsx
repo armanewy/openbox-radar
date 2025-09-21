@@ -4,15 +4,22 @@ import ItemCard, { type Item } from "@/components/cards/ItemCard";
 
 type Props = {
   fetchUrl: string; // base URL for /api/inventory/search
-  baseParams: Record<string, string | number | undefined>;
+  baseParams: Record<string, string | number | string[] | undefined>;
   initialItems: Item[];
   initialNextCursor: string | null | undefined;
 };
 
-function buildQuery(params: Record<string, string | number | undefined | null>) {
+function buildQuery(params: Record<string, string | number | string[] | undefined | null>) {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && String(v).length) u.set(k, String(v));
+    if (Array.isArray(v)) {
+      v
+        .map((entry) => entry?.toString().trim())
+        .filter((entry): entry is string => !!entry && entry.length > 0)
+        .forEach((entry) => u.append(k, entry));
+    } else if (v !== undefined && v !== null && String(v).length) {
+      u.set(k, String(v));
+    }
   }
   return u.toString();
 }

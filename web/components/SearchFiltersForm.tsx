@@ -8,15 +8,17 @@ type Props = {
   price_max: string;
   zip: string;
   radius_miles: string;
+  product_types: string[];
 };
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import { PRODUCT_TYPE_OPTIONS } from "@/lib/productTypes";
 
-export default function SearchFiltersForm({ q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles }: Props) {
+export default function SearchFiltersForm({ q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles, product_types }: Props) {
   function onSubmit() {
-    track('filters_apply', { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles });
+    track('filters_apply', { q, retailer, sku, min_condition, price_min, price_max, zip, radius_miles, product_types });
   }
   return (
     <form method="GET" className="space-y-3" onSubmit={onSubmit}>
@@ -66,6 +68,26 @@ export default function SearchFiltersForm({ q, retailer, sku, min_condition, pri
         <div>
           <label className="block text-sm text-gray-600">Radius (mi)</label>
           <Input name="radius_miles" type="number" defaultValue={radius_miles} />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm text-gray-600 mb-1">Product types</label>
+        <div className="grid grid-cols-2 gap-2">
+          {PRODUCT_TYPE_OPTIONS.map((opt) => {
+            const checked = product_types.includes(opt.value);
+            return (
+              <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  name="product_type"
+                  value={opt.value}
+                  defaultChecked={checked}
+                  className="h-4 w-4"
+                />
+                {opt.label}
+              </label>
+            );
+          })}
         </div>
       </div>
       <Button variant="brand" className="w-full mt-2">Apply</Button>

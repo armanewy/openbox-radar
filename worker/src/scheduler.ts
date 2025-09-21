@@ -7,6 +7,7 @@ import { scrapeMicroCenterStores } from './sources/microcenter/storeScraper';
 import { scrapeBestBuyStores } from './sources/bestbuy/storeScraper';
 import type { StoreConfig } from './sources/types';
 import { postIngest, type IngestPayload } from './ingest';
+import { classifyProductType } from './util/classify';
 
 function baseUrlFromIngest(ingestUrl: string): string {
   try {
@@ -84,6 +85,7 @@ function mapLegacyItems(items: any[], meta: Partial<IngestPayload>): IngestPaylo
         storeId: item.storeId || meta.storeId || 'unknown',
         sku: item.sku || undefined,
         title: item.title,
+        productType: classifyProductType(item.title),
         conditionLabel: condition,
         priceCents: item.priceCents,
         url: item.url,
@@ -210,30 +212,67 @@ export const Scheduler = {
         .split(',')
         .map((s: string) => s.trim())
         .filter(Boolean);
-      const category: string = env.BESTBUY_CATEGORY || '';
-      let apiItems: IngestPayload[] = [];
+      const categories = String(env.BESTBUY_CATEGORIES || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const includeKeywords = String(env.BESTBUY_INCLUDE_KEYWORDS || '')
+        .toLowerCase()
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const excludeKeywords = String(env.BESTBUY_EXCLUDE_KEYWORDS || '')
+        .toLowerCase()
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      const pageSize = Number(env.BESTBUY_PAGE_SIZE || 50);
+      const seenKeys = new Set<string>();
+      const collected: any[] = [];
+
+      const matchesKeywords = (title: string | undefined | null) => {
+        const t = (title || '').toLowerCase();
+        if (!t) return includeKeywords.length === 0;
+        if (excludeKeywords.some((k) => t.includes(k))) return false;
+        if (includeKeywords.length && !includeKeywords.some((k) => t.includes(k))) return false;
+        return true;
+      };
+
+      const consider = (items: any[]) => {
+        for (const item of items) {
+          if (!item || !matchesKeywords(item.title)) continue;
+          const key = item.sku ? item.sku : item.url;
+          if (!key || seenKeys.has(key)) continue;
+          seenKeys.add(key);
+          collected.push(item);
+        }
+      };
+
       try {
         if (skus.length) {
           const result = await fetchBestBuyOpenBoxBySkus(apiKey, skus);
-          apiItems = mapLegacyItems(result.items, {
-            source: 'bestbuy-online',
-            channel: 'online',
-            confidence: 'api',
-          });
-          sources.push({ storeId: result.storeId, count: result.items.length });
-        } else if (category) {
-          const result = await fetchBestBuyOpenBoxByCategory(apiKey, category, Number(env.BESTBUY_PAGE_SIZE || 50));
-          apiItems = mapLegacyItems(result.items, {
-            source: 'bestbuy-online',
-            channel: 'online',
-            confidence: 'api',
-          });
-          sources.push({ storeId: result.storeId, count: result.items.length });
+          consider(result.items);
+        }
+
+        const queryTargets = categories.length ? categories : ['*'];
+        for (const categoryId of queryTargets) {
+          const result = await fetchBestBuyOpenBoxByCategory(apiKey, categoryId as any, pageSize);
+          consider(result.items);
         }
       } catch (err) {
         console.warn('[scheduler] bestbuy api fetch failed', err);
       }
-      ingestItems.push(...apiItems);
+
+      if (collected.length) {
+        ingestItems.push(
+          ...mapLegacyItems(collected, {
+            source: 'bestbuy-online',
+            channel: 'online',
+            confidence: 'api',
+          })
+        );
+        sources.push({ storeId: 'bby-online', count: collected.length });
+      }
     } else if (allowDevStubs) {
       const stub = await fetchBestBuyStore('bby-123');
       ingestItems.push(
