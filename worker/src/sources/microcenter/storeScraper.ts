@@ -117,10 +117,28 @@ async function ensureBrowser(options: MicroCenterScrapeOptions): Promise<Browser
     return globalFactory({ headless });
   }
 
-  throw new Error(
+  let importError: unknown;
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      const playwright = await import('playwright-core');
+      if (playwright?.chromium?.launch) {
+        return playwright.chromium.launch({ headless });
+      }
+    } catch (err) {
+      importError = err;
+    }
+  }
+
+  const baseMessage =
     'Micro Center store scraping requires a browserFactory that supplies a Playwright-compatible browser. ' +
-      'Provide options.browserFactory or set globalThis.__MICROCENTER_BROWSER_FACTORY__ before enabling this source.'
-  );
+    'Provide options.browserFactory or set globalThis.__MICROCENTER_BROWSER_FACTORY__ before enabling this source.';
+
+  if (importError) {
+    const details = importError instanceof Error ? importError.message : String(importError);
+    throw new Error(`${baseMessage} Attempted to import playwright-core but failed: ${details}`);
+  }
+
+  throw new Error(`${baseMessage} Install playwright-core to use the default chromium launcher.`);
 }
 
 export async function scrapeMicroCenterStores(
