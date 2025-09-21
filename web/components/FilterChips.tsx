@@ -1,10 +1,14 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PRODUCT_TYPE_OPTIONS } from "@/lib/productTypes";
+import { PRODUCT_TYPE_OPTIONS, type ProductTypeValue } from "@/lib/productTypes";
 
 type Chip = { key: string; label: string; value: string; onRemove?: (params: URLSearchParams) => void };
 
 const PRODUCT_TYPE_LABEL = new Map(PRODUCT_TYPE_OPTIONS.map((opt) => [opt.value, opt.label] as const));
+
+function isProductTypeValue(value: string): value is ProductTypeValue {
+  return PRODUCT_TYPE_OPTIONS.some((opt) => opt.value === value);
+}
 
 function buildChips(sp: URLSearchParams): Chip[] {
   const chips: Chip[] = [];
@@ -28,7 +32,7 @@ function buildChips(sp: URLSearchParams): Chip[] {
     .filter((v) => v.length);
   const unique = Array.from(new Set(values));
   for (const v of unique) {
-    const display = PRODUCT_TYPE_LABEL.get(v) || v;
+    const display = isProductTypeValue(v) ? PRODUCT_TYPE_LABEL.get(v) ?? v : v;
     chips.push({
       key: `product_type:${v}`,
       label: "Product",
