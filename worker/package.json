@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "linkedom": "^0.15.6",
-    "playwright-core": "^1.45.0"
+    "playwright-core": "^1.55.0"
   },
   "devDependencies": {
     "typescript": "5.5.4",
