@@ -15,6 +15,9 @@ Open‑Box Radar is a Next.js 14 app + Cloudflare Worker that collects open‑bo
 - `worker/` — Cloudflare Worker
   - Schedules pulls from Best Buy (API) and Micro Center (DOM, optional)
   - POSTs normalized items to `web` `/api/ingest`
+- `scraper/` — Playwright scraper microservice packaged for container deploys
+  - Fastify server the worker calls for Micro Center / Best Buy store DOM fetches
+  - Protected by `SCRAPER_SECRET` header (`x-scrape-secret`)
 - `db/` — JSON store metadata and supporting artifacts that complement Drizzle schema definitions (e.g., Best Buy store IDs).
 - `scripts/` — Utilities like `seed_dev_items.js` to exercise ingest and local workflows.
 - `.env.example` — environment template
@@ -51,6 +54,8 @@ pnpm dev   # http://127.0.0.1:8787
 > cd worker
 > pnpm add playwright-core
 > ```
+
+> The standalone Playwright scraper runs separately. See **Playwright scraper deployment** for containerized deploy guidance.
 
 5) Configure Worker for real Best Buy data
    - In `worker/wrangler.toml` set:
@@ -96,6 +101,8 @@ Web (`web/.env`)
 Worker (`worker/wrangler.toml` / secrets)
 - `CRON_SHARED_SECRET` — must equal web `CRON_SECRET`
 - `INGEST_URL` — e.g. `http://localhost:3000/api/ingest`
+- `SCRAPER_URL` — base URL of the deployed Playwright scraper service (no trailing slash)
+- `SCRAPER_SECRET` — shared with the Playwright scraper (`x-scrape-secret` header)
 - `USE_REAL_BESTBUY` — `1` to pull real Best Buy
 - `BESTBUY_API_KEY` — Worker secret
 - Source selection: `BESTBUY_SKUS` or `BESTBUY_CATEGORY` (with `BESTBUY_PAGE_SIZE`)
@@ -107,6 +114,15 @@ Worker (`worker/wrangler.toml` / secrets)
 - `BESTBUY_STORE_IDS` — comma list of Best Buy store identifiers (`bby-123@https://...` to override URLs)
 - `USE_REAL_NEWEGG` — `1` to scrape Newegg open-box listings
 - `ENABLE_BB_ENRICHMENT`, `BB_ENRICHMENT_TTL_MIN`, `BB_ENRICHMENT_FAIL_TTL_MIN`, `BB_MAX_ENRICH_RPS`
+
+## Playwright scraper deployment
+
+- **Image build**: point your orchestrator (Render, Fly.io, etc.) at `scraper/Dockerfile`. The container installs dependencies, compiles TypeScript, and launches with `node dist/server.js`.
+- **Ports**: the container exposes port `3000` by default. Override `PORT` if your platform assigns a different one.
+- **Health log**: on successful boot the server logs `scraper listening on :<port>`.
+- **Auth**: configure `SCRAPER_SECRET` in the container environment. The service rejects requests unless the Cloudflare Worker sends the same value via the `x-scrape-secret` header.
+- **Worker wiring**: update the worker environment (`SCRAPER_URL`, `SCRAPER_SECRET`) to point at the deployed scraper URL so `/scrape/*` calls succeed after each deploy.
+- **Keep URLs in sync**: when the scraper hostname/port changes, update both the orchestrator config and the worker vars so the worker hits the correct base URL.
 
 ## Data model (Drizzle)
 

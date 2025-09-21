@@ -14,6 +14,9 @@ enabled = true
 # Point to your local Next dev server ingest endpoint
 # If your Next runs on :3001, change to http://localhost:3001/api/ingest
 INGEST_URL = "https://openboxradar.com/api/ingest"
+# Base URL for the Playwright scraper container (update per deploy)
+SCRAPER_URL = "http://127.0.0.1:3000"
+# Use `wrangler secret put SCRAPER_SECRET` to share the header with the scraper service
 ENABLE_MC_STORE_SCRAPE = "1"
 ENABLE_BB_STORE_SCRAPE = "1"
 PLAYWRIGHT_HEADLESS = "1"
