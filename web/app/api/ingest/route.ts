@@ -4,11 +4,30 @@ import { inventory, price_history } from '@/lib/drizzle/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 
+const ProductType = z.enum([
+  'LAPTOP',
+  'DESKTOP',
+  'MONITOR',
+  'TV',
+  'GPU',
+  'CPU',
+  'CONSOLE',
+  'STORAGE',
+  'NETWORKING',
+  'PERIPHERAL',
+  'TABLET',
+  'PHONE',
+  'AUDIO',
+  'CAMERA',
+  'OTHER',
+]);
+
 const Item = z.object({
   retailer: z.enum(['bestbuy','microcenter','newegg']),
   storeId: z.string().min(1),
   sku: z.string().optional(),
   title: z.string().min(1),
+  productType: ProductType.optional(),
   conditionLabel: z.string().min(1),
   priceCents: z.number().int().positive(),
   url: z.string().url(),
@@ -94,6 +113,7 @@ export async function POST(req: NextRequest) {
       url: it.url,
       seen_at: seenAt,
       image_url: it.imageUrl ?? null,
+      product_type: it.productType ?? null,
       source: it.source ?? `${it.retailer}-${it.storeId}`,
       channel: (it.channel ?? 'store') as any,
       confidence: (it.confidence ?? 'scrape') as any,

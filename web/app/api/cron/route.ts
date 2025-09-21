@@ -5,6 +5,7 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import { fetchDevItems } from "@/lib/retailers/dev";
 import { sendAlertEmail } from "@/lib/alerts/email";
 import { ingestBestBuyForSkus } from "@/lib/retailers/bestbuy/ingest";
+import { classifyProductType } from "@/lib/productClassifier";
 
 const DROP_MIN_CENTS = 2500;   // $25
 const DROP_MIN_PCT = 5;        // 5%
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
         price_cents: item.priceCents,
         url: item.url,
         seen_at: new Date(item.seenAt),
+        product_type: classifyProductType(item.title),
       });
 
       // Email only on 'new' or 'price_drop'

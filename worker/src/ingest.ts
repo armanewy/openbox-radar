@@ -3,6 +3,7 @@ export type IngestPayload = {
   storeId: string;
   sku?: string;
   title: string;
+  productType?: import('./util/classify').ProductType;
   conditionLabel: string;
   priceCents: number;
   url: string;

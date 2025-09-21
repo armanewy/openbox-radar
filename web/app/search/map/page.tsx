@@ -15,6 +15,8 @@ type Item = {
   title: string;
   price_cents: number;
   url: string;
+  product_type?: string | null;
+  channel?: string | null;
   distance_miles?: number | null;
   image_url?: string | null;
   store_lat?: number | null;

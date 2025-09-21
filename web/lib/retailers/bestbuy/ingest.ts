@@ -1,6 +1,7 @@
 import { db } from '@/lib/drizzle/db';
 import { inventory } from '@/lib/drizzle/schema';
 import { fetchOpenBoxBySkus } from './adapter';
+import { classifyProductType } from '@/lib/productClassifier';
 
 const TTL_HOURS = 71; // stay under 72h
 const ttl = (h: number) => new Date(Date.now() + h * 3600 * 1000);
@@ -31,6 +32,7 @@ export async function ingestBestBuyForSkus(skus: string[]) {
       price_cents: it.priceCents,
       url: it.url,
       seen_at: it.seenAt,
+      product_type: classifyProductType(it.title),
       source: 'bestbuy',
       fetched_at: new Date(),
       expires_at: ttl(TTL_HOURS),

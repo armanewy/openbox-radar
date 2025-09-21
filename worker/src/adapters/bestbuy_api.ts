@@ -77,10 +77,13 @@ export async function fetchBestBuyOpenBoxBySkus(apiKey: string, skus: string[]):
   return { storeId: 'bby-online', items };
 }
 
-export async function fetchBestBuyOpenBoxByCategory(apiKey: string, categoryId: string, pageSize = 50): Promise<{ storeId: string; items: BbyItem[] }>{
+export async function fetchBestBuyOpenBoxByCategory(
+  apiKey: string,
+  categoryId: string | '*',
+  pageSize = 50
+): Promise<{ storeId: string; items: BbyItem[] }> {
   if (!apiKey) throw new Error('BESTBUY_API_KEY missing');
-  if (!categoryId) return { storeId: 'bby-online', items: [] };
-  const query = `openBox(categoryId=${categoryId})`;
+  const query = categoryId && categoryId !== '*' ? `openBox(categoryId=${categoryId})` : 'openBox()';
   const u = `${API_ROOT}/beta/products/${encodeURI(query)}?apiKey=${encodeURIComponent(apiKey)}&pageSize=${encodeURIComponent(String(pageSize))}`;
   const json: any = await fetchJson(u);
   const results: OpenBoxResult[] = json?.results ?? [];

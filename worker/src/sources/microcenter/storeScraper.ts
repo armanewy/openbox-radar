@@ -1,4 +1,5 @@
 import { withRateLimit } from '../../util/rate';
+import { classifyProductType } from '../../util/classify';
 import type { IngestPayload } from '../../ingest';
 import type { StoreConfig } from '../types';
 import type { StoreScrapeResult } from '../result';
@@ -168,6 +169,7 @@ export async function scrapeMicroCenterStores(
           items.push({
             ...meta,
             title,
+            productType: classifyProductType(title),
             priceCents,
             conditionLabel: inferCondition(conditionText),
             url: resolvedUrl,
