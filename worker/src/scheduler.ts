@@ -278,8 +278,9 @@ async function refreshBestBuyForHotWatches(env: any) {
 export const Scheduler = {
   async run(env: any) {
     const allowDevStubs = env.ALLOW_DEV_STUBS === '1';
-    const enableMicroCenterStore = env.ENABLE_MC_STORE_SCRAPE === '1';
-    const enableBestBuyStore = env.ENABLE_BB_STORE_SCRAPE === '1';
+    const hasScraperService = Boolean((env.SCRAPER_URL || '').trim() && (env.SCRAPER_SECRET || '').trim());
+    const enableMicroCenterStore = env.ENABLE_MC_STORE_SCRAPE === '1' && hasScraperService;
+    const enableBestBuyStore = env.ENABLE_BB_STORE_SCRAPE === '1' && hasScraperService;
     const useBestBuyApi = env.USE_REAL_BESTBUY === '1';
     const useMicroCenterDom = env.USE_REAL_MICROCENTER === '1';
     const useNewegg = env.USE_REAL_NEWEGG === '1';
@@ -288,7 +289,9 @@ export const Scheduler = {
     const sources: Array<{ storeId: string; count: number; url?: string }> = [];
 
     // Micro Center store scrape
-    if (enableMicroCenterStore) {
+    if (env.ENABLE_MC_STORE_SCRAPE === '1' && !hasScraperService) {
+      console.warn('[scheduler] microcenter scrape skipped: scraper service is not configured');
+    } else if (enableMicroCenterStore) {
       const stores = parseStoreConfigs(env.MICROCENTER_STORE_IDS, ['mc-cambridge'], buildMicroCenterStore);
       const mcResult = await fetchScraperService(env, '/scrape/microcenter-store', stores).catch((err) => {
         console.warn('[scheduler] microcenter scrape failed', err);
@@ -331,7 +334,9 @@ export const Scheduler = {
     }
 
     // Best Buy store scrape
-    if (enableBestBuyStore) {
+    if (env.ENABLE_BB_STORE_SCRAPE === '1' && !hasScraperService) {
+      console.warn('[scheduler] bestbuy store scrape skipped: scraper service is not configured');
+    } else if (enableBestBuyStore) {
       const stores = parseStoreConfigs(env.BESTBUY_STORE_IDS, ['bby-123'], buildBestBuyStore);
       const bbResult = await fetchScraperService(env, '/scrape/bestbuy-store', stores).catch((err) => {
         console.warn('[scheduler] bestbuy store scrape failed', err);
