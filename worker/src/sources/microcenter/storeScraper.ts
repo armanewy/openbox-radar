@@ -20,17 +20,7 @@ type Page = {
   close(): Promise<void>;
 };
 
-async function loadChromium() {
-  try {
-    const mod: any = await import('playwright-core');
-    if (mod?.chromium?.launch) return mod.chromium;
-  } catch (err) {
-    console.warn('[microcenter] playwright-core not available', err);
-  }
-  throw new Error(
-    'playwright-core is required to scrape Micro Center store pages. Install it in the worker package before enabling this source.'
-  );
-}
+type MicroCenterBrowserFactory = (options: { headless: boolean }) => Promise<Browser>;
 
 function toStoreMeta(store: StoreConfig) {
   return {
@@ -108,15 +98,30 @@ function normalizeImage(src: string | null | undefined, base: string): string | 
   }
 }
 
-async function ensureBrowser(headless: boolean): Promise<Browser> {
-  const chromium = await loadChromium();
-  return chromium.launch({ headless });
-}
-
 export type MicroCenterScrapeOptions = {
   headless?: boolean;
   rateLimitMs?: number;
+  browserFactory?: MicroCenterBrowserFactory;
 };
+
+async function ensureBrowser(options: MicroCenterScrapeOptions): Promise<Browser> {
+  const headless = options.headless !== false;
+  if (typeof options.browserFactory === 'function') {
+    return options.browserFactory({ headless });
+  }
+
+  const globalFactory = (globalThis as any).__MICROCENTER_BROWSER_FACTORY__ as
+    | MicroCenterBrowserFactory
+    | undefined;
+  if (typeof globalFactory === 'function') {
+    return globalFactory({ headless });
+  }
+
+  throw new Error(
+    'Micro Center store scraping requires a browserFactory that supplies a Playwright-compatible browser. ' +
+      'Provide options.browserFactory or set globalThis.__MICROCENTER_BROWSER_FACTORY__ before enabling this source.'
+  );
+}
 
 export async function scrapeMicroCenterStores(
   stores: StoreConfig[],
@@ -126,9 +131,8 @@ export async function scrapeMicroCenterStores(
     return { items: [], metrics: [] };
   }
 
-  const headless = options.headless !== false;
   const rateLimit = options.rateLimitMs ?? 1000;
-  const browser = await ensureBrowser(headless);
+  const browser = await ensureBrowser(options);
   const context = await browser.newContext();
   const page = await context.newPage();
 
