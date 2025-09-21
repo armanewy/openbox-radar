@@ -80,8 +80,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Recor
   try {
     const res = await fetch(absoluteUrl('/api/inventory/search') + '?' + qp.toString(), {
       cache: "no-store",
-      // Ensure server fetch regardless of deployment
-      next: { revalidate: 0 },
     });
 
     const contentType = res.headers.get("content-type") ?? "";
