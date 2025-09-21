@@ -4,7 +4,21 @@ import type { NormalizedItem } from './types';
 const STORE_ID = 'newegg-online';
 const STUB_STORE_ID = 'newegg-stub';
 const LISTING_URL = 'https://www.newegg.com/d/Open-Box?PageSize=96';
-const USER_AGENT = 'Mozilla/5.0 (compatible; OpenboxRadar/0.4; +https://openboxradar.com)';
+const USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.89 Safari/537.36';
+const REQUEST_HEADERS = {
+  accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+  'accept-language': 'en-US,en;q=0.9',
+  'cache-control': 'no-cache',
+  pragma: 'no-cache',
+  referer: 'https://www.newegg.com/',
+  'sec-fetch-dest': 'document',
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'same-origin',
+  'upgrade-insecure-requests': '1',
+  'user-agent': USER_AGENT,
+} as const;
 
 function parsePriceToCents(text: string): number | null {
   const cleaned = text.replace(/[\s,$]/g, '').replace(/\.([0-9])$/, '.$10');
@@ -54,10 +68,7 @@ export async function fetchNeweggClearance(useReal: boolean): Promise<{ storeId:
 
   try {
     const res = await fetch(LISTING_URL, {
-      headers: {
-        'user-agent': USER_AGENT,
-        'accept-language': 'en-US,en;q=0.9',
-      },
+      headers: REQUEST_HEADERS,
     });
     if (!res.ok) {
       console.warn('[newegg] listing fetch failed', res.status, res.statusText);
