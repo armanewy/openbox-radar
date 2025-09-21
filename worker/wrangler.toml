@@ -23,7 +23,7 @@ MICROCENTER_STORE_IDS = "mc-cambridge"
 BESTBUY_STORE_IDS = "bby-123"
 USE_REAL_MICROCENTER = "1"
 USE_REAL_BESTBUY = "1"
-USE_REAL_NEWEGG = "0"
+USE_REAL_NEWEGG = "1"
 ALLOW_DEV_STUBS = "0"
 # Provide one of the following when USE_REAL_BESTBUY=1
 # BESTBUY_SKUS can be a comma-separated list like: 1234567,7654321
