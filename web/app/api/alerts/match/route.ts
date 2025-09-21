@@ -19,13 +19,19 @@ export async function GET(req: NextRequest) {
   const w = await db.query.watches.findFirst({ where: eq(watches.id, watchId as any) });
   if (!w) return NextResponse.json({ error: 'watch not found' }, { status: 404 });
 
+  const storeIds = Array.isArray(w.stores)
+    ? w.stores.map((id) => (typeof id === 'string' ? id.trim() : '')).filter((id) => id.length)
+    : [];
+  const keywords = Array.isArray(w.keywords)
+    ? w.keywords.map((word) => (typeof word === 'string' ? word.trim() : '')).filter((word) => word.length)
+    : [];
+  const sku = typeof w.sku === 'string' ? w.sku.trim() : '';
+
   const where = [
     eq(inventory.retailer, w.retailer as any),
-    w.stores && w.stores.length ? inArray(inventory.store_id, w.stores) : undefined,
-    w.sku ? ilike(inventory.sku, w.sku) : undefined,
-    !w.sku && w.keywords && w.keywords.length
-      ? or(...w.keywords.map((k) => ilike(inventory.title, `%${k}%`)))
-      : undefined,
+    storeIds.length ? inArray(inventory.store_id, storeIds) : undefined,
+    sku ? ilike(inventory.sku, sku) : undefined,
+    !sku && keywords.length ? or(...keywords.map((k) => ilike(inventory.title, `%${k}%`))) : undefined,
     w.price_ceiling_cents ? lte(inventory.price_cents, w.price_ceiling_cents) : undefined,
     w.min_condition ? gte(inventory.condition_rank as any, w.min_condition as any) : undefined,
   ].filter(Boolean) as any[];
@@ -56,9 +62,12 @@ export async function GET(req: NextRequest) {
     .orderBy(desc(inventory.seen_at), desc(inventory.id))
     .limit(200);
 
+  const zipcode = typeof w.zipcode === 'string' ? w.zipcode.trim() : '';
+  const radius = typeof w.radius_miles === 'number' ? w.radius_miles : Number(w.radius_miles || 0);
+
   let items = rows;
-  if (w.zipcode && w.radius_miles) {
-    const origin = lookupZip(w.zipcode);
+  if (zipcode && radius) {
+    const origin = lookupZip(zipcode);
     if (origin) {
       items = rows.filter((r) => {
         let lat = typeof (r.store_lat as any) === 'number' ? (r.store_lat as any as number) : undefined;
@@ -69,7 +78,7 @@ export async function GET(req: NextRequest) {
         }
         if (lat == null || lng == null) return false;
         const d = milesBetween(origin, { lat, lng });
-        return d <= (w.radius_miles || 0);
+        return d <= radius;
       });
     }
   }
