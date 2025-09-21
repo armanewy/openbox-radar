@@ -1,0 +1,19 @@
+{
+  "name": "openbox-scraper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.0",
+    "fastify": "^4.28.1",
+    "playwright": "^1.47.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.4"
+  }
+}
